@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1565c0">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>تطبيق صلاة</title>
+<style>
+  body{margin:0;font-family:sans-serif;background:#f4f8ff;color:#12305a;text-align:center;padding-bottom:70px}
+  h1{margin:0;padding:18px;background:#1565c0;color:#fff;font-size:22px}
+  .tab{display:none;padding-top:8px}.tab.on{display:block}
+  nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid #cfe0fb}
+  nav button{flex:1;padding:14px 4px;background:none;border:0;color:#1565c0;font-size:14px}
+  nav button.on{background:#e3f0ff;color:#0d47a1;font-weight:bold}
+  #city{padding:10px;font-size:14px;color:#4a6a96}
+  #next{margin:15px;padding:15px;background:#1565c0;color:#fff;border-radius:12px;font-size:20px;font-weight:bold}
+  .row{display:flex;justify-content:space-between;margin:8px 15px;padding:14px;background:#fff;border-radius:10px;font-size:18px;box-shadow:0 1px 4px rgba(21,101,192,.18)}
+  .card{margin:10px 15px;padding:16px;background:#fff;border-radius:12px;font-size:18px;line-height:1.9;box-shadow:0 1px 4px rgba(21,101,192,.18)}
+  .cnt{display:inline-block;margin-top:8px;padding:6px 16px;background:#1565c0;color:#fff;border-radius:20px;font-weight:bold}
+  .done{opacity:.45}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 15px}
+  .grid div{padding:14px 4px;background:#fff;border-radius:10px;font-size:17px;box-shadow:0 1px 4px rgba(21,101,192,.18)}
+  .src{font-size:14px;color:#4a6a96}
+</style>
+</head>
+<body>
+<h1>🕌 تطبيق صلاة</h1>
+
+<div id="t1" class="tab on">
+  <div id="city">جارٍ تحديد موقعك...</div>
+  <div id="next"></div>
+  <div id="list"></div>
+</div>
+
+<div id="t2" class="tab">
+  <div id="adhkar"></div>
+</div>
+
+<div id="t3" class="tab">
+  <div class="grid" id="names"></div>
+</div>
+
+<div id="t4" class="tab">
+  <div class="card" id="hadith"></div>
+</div>
+
+<nav>
+  <button class="on" onclick="show(1,this)">المواقيت</button>
+  <button onclick="show(2,this)">الأذكار</button>
+  <button onclick="show(3,this)">الأسماء</button>
+  <button onclick="show(4,this)">حديث اليوم</button>
+</nav>
+
+<script>
+function show(n,b){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+  document.getElementById("t"+n).classList.add("on");
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+}
+
+/* ===== المواقيت ===== */
+const pn={Fajr:"الفجر",Sunrise:"الشروق",Dhuhr:"الظهر",Asr:"العصر",Maghrib:"المغرب",Isha:"العشاء"};
+let times={};
+function load(lat,lon){
+  fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=4`)
+  .then(r=>r.json()).then(d=>{
+    times=d.data.timings;
+    document.getElementById("city").textContent=d.data.date.readable+" | "+d.data.meta.timezone;
+    render();setInterval(render,1000);
+  }).catch(()=>document.getElementById("city").textContent="تعذّر تحميل المواقيت، تأكد من الإنترنت");
+}
+function render(){
+  const list=document.getElementById("list");let html="";
+  const now=new Date();let next=null,nextDiff=Infinity;
+  for(const k in pn){
+    const [h,m]=times[k].split(":").map(Number);
+    const t=new Date();t.setHours(h,m,0,0);
+    let diff=t-now;if(diff<0)diff+=86400000;
+    if(diff<nextDiff){nextDiff=diff;next=k}
+    html+=`<div class="row"><span>${pn[k]}</span><span>${times[k]}</span></div>`;
+  }
+  list.innerHTML=html;
+  const s=Math.floor(nextDiff/1000),hh=Math.floor(s/3600),mm=Math.floor(s%3600/60),ss=s%60;
+  document.getElementById("next").textContent=`${pn[next]} بعد ${hh}:${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;
+}
+navigator.geolocation.getCurrentPosition(
+  p=>load(p.coords.latitude,p.coords.longitude),
+  ()=>{document.getElementById("city").textContent="لم يتم السماح بالموقع، سيتم استخدام مكة المكرمة";load(21.4225,39.8262)}
+);
+
+/* ===== الأذكار ===== */
+const adhkar=[
+ {t:"أعوذ بالله من الشيطان الرجيم: ﴿اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...﴾ (آية الكرسي)",c:1},
+ {t:"سورة الإخلاص، وسورة الفلق، وسورة الناس (صباحًا ومساءً)",c:3},
+ {t:"أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير",c:1},
+ {t:"اللهم بك أصبحنا، وبك أمسينا، وبك نحيا، وبك نموت، وإليك النشور",c:1},
+ {t:"اللهم أنت ربي لا إله إلا أنت، خلقتني وأنا عبدك، وأنا على عهدك ووعدك ما استطعت، أعوذ بك من شر ما صنعت، أبوء لك بنعمتك علي، وأبوء بذنبي فاغفر لي فإنه لا يغفر الذنوب إلا أنت (سيد الاستغفار)",c:1},
+ {t:"بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء وهو السميع العليم",c:3},
+ {t:"رضيت بالله ربًا، وبالإسلام دينًا، وبمحمد ﷺ نبيًا",c:3},
+ {t:"سبحان الله وبحمده",c:100},
+ {t:"لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير",c:10},
+ {t:"أستغفر الله وأتوب إليه",c:100},
+ {t:"سبحان الله (بعد الصلاة)",c:33},
+ {t:"الحمد لله (بعد الصلاة)",c:33},
+ {t:"الله أكبر (بعد الصلاة)",c:34},
+ {t:"اللهم صلِّ وسلّم على نبينا محمد",c:10}
+];
+document.getElementById("adhkar").innerHTML=adhkar.map((a,i)=>
+ `<div class="card" id="a${i}" onclick="tap(${i})">${a.t}<br><span class="cnt" id="c${i}">${a.c}</span></div>`).join("");
+const left=adhkar.map(a=>a.c);
+function tap(i){
+  if(left[i]>0){left[i]--;document.getElementById("c"+i).textContent=left[i];
+   if(left[i]==0)document.getElementById("a"+i).classList.add("done");
+   if(navigator.vibrate)navigator.vibrate(30);}
+}
+
+/* ===== أسماء الله الحسنى ===== */
+const names="الرحمن،الرحيم،الملك،القدوس،السلام،المؤمن،المهيمن،العزيز،الجبار،المتكبر،الخالق،البارئ،المصور،الغفار،القهار،الوهاب،الرزاق،الفتاح،العليم،القابض،الباسط،الخافض،الرافع،المعز،المذل،السميع،البصير،الحكم،العدل،اللطيف،الخبير،الحليم،العظيم،الغفور،الشكور،العلي،الكبير،الحفيظ،المقيت،الحسيب،الجليل،الكريم،الرقيب،المجيب،الواسع،الحكيم،الودود،المجيد،الباعث،الشهيد،الحق،الوكيل،القوي،المتين،الولي،الحميد،المحصي،المبدئ،المعيد،المحيي،المميت،الحي،القيوم،الواجد،الماجد،الواحد،الأحد،الصمد،القادر،المقتدر،المقدم،المؤخر،الأول،الآخر،الظاهر،الباطن،الوالي،المتعالي،البر،التواب،المنتقم،العفو،الرؤوف،مالك الملك،ذو الجلال والإكرام،المقسط،الجامع،الغني،المغني،المانع،الضار،النافع،النور،الهادي،البديع،الباقي،الوارث،الرشيد،الصبور".split("،");
+document.getElementById("names").innerHTML=names.map((n,i)=>`<div>${i+1}<br>${n}</div>`).join("");
+
+/* ===== حديث اليوم ===== */
+const hadiths=[
+ ["إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى","متفق عليه"],
+ ["من حسن إسلام المرء تركه ما لا يعنيه","رواه الترمذي"],
+ ["لا يؤمن أحدكم حتى يحب لأخيه ما يحب لنفسه","متفق عليه"],
+ ["من كان يؤمن بالله واليوم الآخر فليقل خيرًا أو ليصمت","متفق عليه"],
+ ["الدين النصيحة","رواه مسلم"],
+ ["خيركم من تعلم القرآن وعلمه","رواه البخاري"],
+ ["الطهور شطر الإيمان","رواه مسلم"],
+ ["أحب الأعمال إلى الله أدومها وإن قل","متفق عليه"],
+ ["كلمتان خفيفتان على اللسان، ثقيلتان في الميزان، حبيبتان إلى الرحمن: سبحان الله وبحمده، سبحان الله العظيم","متفق عليه"],
+ ["ليس الشديد بالصرعة، إنما الشديد الذي يملك نفسه عند الغضب","متفق عليه"],
+ ["من سلك طريقًا يلتمس فيه علمًا سهّل الله له به طريقًا إلى الجنة","رواه مسلم"],
+ ["لا تغضب","رواه البخاري"],
+ ["المسلم من سلم المسلمون من لسانه ويده","متفق عليه"],
+ ["الكلمة الطيبة صدقة","متفق عليه"],
+ ["اتق الله حيثما كنت، وأتبع السيئة الحسنة تمحها، وخالق الناس بخلق حسن","رواه الترمذي"],
+ ["من دل على خير فله مثل أجر فاعله","رواه مسلم"],
+ ["إن الله لا ينظر إلى صوركم وأموالكم، ولكن ينظر إلى قلوبكم وأعمالكم","رواه مسلم"]
+];
+const day=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/86

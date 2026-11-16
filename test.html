@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>فحص</title>
+</head>
+<body style="font-family:sans-serif;padding:16px;font-size:17px;line-height:1.8">
+<h3>🔍 فحص التطبيق</h3>
+<div id="out">جارٍ الفحص...</div>
+<script>
+var o=[];
+function show(){document.getElementById("out").innerHTML=o.join("<br><br>");}
+function chk(name,code){
+  try{new Function(code);return "✅ "+name+" سليم";}
+  catch(e){return "❌ "+name+" فيه خطأ: "+e.message;}
+}
+function getFile(name,done){
+  fetch(name+"?v="+Date.now()).then(function(r){
+    if(!r.ok){o.push("❌ "+name+" غير موجود (رقم الخطأ "+r.status+")");done();return;}
+    return r.text().then(function(t){
+      o.push("📄 "+name+": "+t.split("\n").length+" سطر");
+      if(name.indexOf(".js")>-1){o.push(chk(name,t));}
+      if(name==="index.html"){
+        var re=/<script>([\s\S]*?)<\/script>/g,m,i=0;
+        while((m=re.exec(t))){i++;o.push(chk("السكربت رقم "+i+" داخل index.html",m[1]));}
+        o.push(t.indexOf("adhkar-data.js")>-1?"✅ index.html فيه ربط ملف الأذكار":"❌ index.html نسخة قديمة (ما فيه ربط ملف الأذكار)");
+      }
+      done();
+    });
+  }).catch(function(){o.push("❌ تعذّر قراءة "+name);done();});
+}
+getFile("index.html",function(){
+  getFile("adhkar-data.js",function(){
+    getFile("app2.js",function(){show();});
+  });
+});
+</script>
+</body>
+</html>

@@ -90,11 +90,143 @@ CATS.push(
   +".vnav.off{opacity:.3}"
   +".vcirc{width:104px;height:104px;border-radius:50%;border:3px solid var(--line);background:var(--card);color:var(--fg);font-size:1.9rem;box-shadow:0 1px 5px var(--shadow)}"
   +".vcirc.ok{background:var(--pri);border-color:var(--pri);color:#fff}"
-  +".vlbl{color:var(--sub);font-size:.95rem}";
+  +".vlbl{color:var(--sub);font-size:.95rem}"
+  +".vfoot{display:flex;align-items:center;justify-content:space-between;margin:6px 4px 0}"
+  +".vsp{width:52px}"
+  +".vlisten{width:52px;height:52px;border-radius:50%;border:0;background:var(--sel);color:var(--link);font-size:1.5rem;box-shadow:0 1px 5px var(--shadow)}"
+  +".vlisten.on{background:var(--pri);color:#fff}"
+  +".vmsg{min-height:1.3em;margin-top:6px;font-size:.8rem;color:var(--sub)}";
   var st=document.createElement("style");
   st.textContent=css;
   document.head.appendChild(st);
 })();
+
+/* ===== الصوت ===== */
+var AUD={tok:0,el:null,on:false};
+
+function p3(n){return n<10?"00"+n:(n<100?"0"+n:""+n);}
+function rng(s,a,b){
+  var o=[];
+  for(var k=a;k<=b;k++){o.push(p3(s)+p3(k));}
+  return o;
+}
+function quranKeys(txt){
+  var t=txt.replace(/<br>/g," ");
+  var ALL=rng(112,1,4).concat(rng(113,1,5)).concat(rng(114,1,6));
+  if(t.indexOf("آية الكرسي")===0){return ["002255"];}
+  if(t.indexOf("سورة الإخلاص والفلق والناس")===0){return ALL;}
+  if(t.indexOf("يجمع كفيه")===0){return ALL;}
+  if(t.indexOf("سورة الإخلاص")===0){return rng(112,1,4);}
+  if(t.indexOf("سورة الفلق")===0){return rng(113,1,5);}
+  if(t.indexOf("سورة الناس")===0){return rng(114,1,6);}
+  if(t.indexOf("قراءة آخر آيتين")===0){return ["002285","002286"];}
+  if(t.indexOf("ربنا آتنا في الدنيا")===0){return ["002201"];}
+  if(t.indexOf("ربنا لا تزغ قلوبنا")===0){return ["003008"];}
+  if(t.indexOf("ربنا اغفر لي ولوالدي")===0){return ["014041"];}
+  return null;
+}
+
+function setIcon(on){
+  var b=document.getElementById("vl");
+  if(b){
+    b.textContent=on?"⏹":"🎧";
+    if(on){b.classList.add("on");}else{b.classList.remove("on");}
+  }
+}
+function setMsg(t){
+  var m=document.getElementById("vmsg");
+  if(m){m.textContent=t||"";}
+}
+function stopAudio(){
+  AUD.tok++;
+  AUD.on=false;
+  if(AUD.el){try{AUD.el.pause();}catch(e){}AUD.el=null;}
+  try{if(window.speechSynthesis){speechSynthesis.cancel();}}catch(e){}
+  setIcon(false);
+}
+
+function playUrls(urls,tok,i){
+  if(tok!==AUD.tok){return;}
+  if(i>=urls.length){stopAudio();setMsg("");return;}
+  var a=new Audio(urls[i]);
+  AUD.el=a;
+  a.onended=function(){playUrls(urls,tok,i+1);};
+  a.onerror=function(){
+    if(tok===AUD.tok){stopAudio();setMsg("تعذّر تشغيل التلاوة، تأكد من الاتصال بالإنترنت");}
+  };
+  var pr=a.play();
+  if(pr&&pr.catch){
+    pr.catch(function(){
+      if(tok===AUD.tok){stopAudio();setMsg("تعذّر تشغيل التلاوة، تأكد من الاتصال بالإنترنت");}
+    });
+  }
+}
+
+function ttsClean(txt){
+  return txt.replace(/<br>/g,". ").replace(/<[^>]+>/g,"").replace(/\([^)]*\)/g,"").replace(/[﴿﴾]/g,"").replace(/ﷺ/g,"صلى الله عليه وسلم").replace(/\s+/g," ").trim();
+}
+function chunks(s){
+  var parts=s.split(/[،.؛]/),out=[],cur="";
+  for(var i=0;i<parts.length;i++){
+    var p=parts[i].trim();
+    if(!p){continue;}
+    if(cur&&(cur+"، "+p).length>110){out.push(cur);cur=p;}
+    else{cur=cur?cur+"، "+p:p;}
+  }
+  if(cur){out.push(cur);}
+  return out;
+}
+function speakChunks(list,tok,i){
+  if(tok!==AUD.tok){return;}
+  if(i>=list.length){stopAudio();setMsg("");return;}
+  var u=new SpeechSynthesisUtterance(list[i]);
+  u.lang="ar-SA";
+  u.rate=0.85;
+  var vs=speechSynthesis.getVoices()||[];
+  for(var k=0;k<vs.length;k++){
+    if(vs[k].lang&&vs[k].lang.toLowerCase().indexOf("ar")===0){u.voice=vs[k];break;}
+  }
+  u.onend=function(){speakChunks(list,tok,i+1);};
+  u.onerror=function(){
+    if(tok===AUD.tok){stopAudio();setMsg("تعذّرت القراءة الصوتية على جهازك");}
+  };
+  speechSynthesis.speak(u);
+}
+
+function toggleListen(){
+  if(curCat<0){return;}
+  if(AUD.on){stopAudio();setMsg("");return;}
+  var txt=CATS[curCat].d[vi][0];
+  var keys=quranKeys(txt);
+  AUD.tok++;
+  var tok=AUD.tok;
+  AUD.on=true;
+  setIcon(true);
+  if(keys){
+    var urls=[];
+    for(var i=0;i<keys.length;i++){
+      urls.push("https://everyayah.com/data/Alafasy_128kbps/"+keys[i]+".mp3");
+    }
+    setMsg("تلاوة الشيخ مشاري العفاسي");
+    playUrls(urls,tok,0);
+    return;
+  }
+  if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){
+    stopAudio();
+    setMsg("جهازك لا يدعم القراءة الصوتية");
+    return;
+  }
+  setMsg("صوت آلي من جهازك، وقد لا يكون النطق دقيقًا");
+  try{speechSynthesis.cancel();}catch(e){}
+  var list=chunks(ttsClean(txt));
+  setTimeout(function(){speakChunks(list,tok,0);},150);
+}
+
+/* إيقاف الصوت عند تغيير التبويب */
+if(typeof show==="function"){
+  var origShow=show;
+  show=function(n,b){stopAudio();origShow(n,b);};
+}
 
 /* ===== منطق الأذكار (عدّ تصاعدي) ===== */
 var curCat=-1,cnt=[],vi=0;
@@ -134,11 +266,13 @@ function renderView(){
    +'<button class="vcirc'+(c>=target?' ok':'')+'" id="vc" onclick="tapV()">'+c+'</button>'
    +'<button class="vnav'+(vi===n-1?' off':'')+'" onclick="goV(1)">‹</button>'
    +'</div>'
-   +'<div class="vlbl">'+timesLabel(target)+'</div></div></div>';
+   +'<div class="vfoot"><span class="vsp"></span><div class="vlbl">'+timesLabel(target)+'</div><button class="vlisten" id="vl" onclick="toggleListen()">🎧</button></div>'
+   +'<div class="vmsg" id="vmsg"></div></div></div>';
   document.getElementById("adItems").innerHTML=html;
 }
 
 function openCat(i){
+  stopAudio();
   curCat=i;vi=0;
   document.getElementById("adList").style.display="none";
   document.getElementById("adView").style.display="block";
@@ -147,6 +281,7 @@ function openCat(i){
   window.scrollTo(0,0);
 }
 function backCat(){
+  stopAudio();
   curCat=-1;
   document.getElementById("adView").style.display="none";
   document.getElementById("adList").style.display="block";
@@ -156,6 +291,7 @@ function goV(dir){
   if(curCat<0){return;}
   var n=CATS[curCat].d.length,nj=vi+dir;
   if(nj<0||nj>=n){return;}
+  stopAudio();
   vi=nj;
   renderView();
   window.scrollTo(0,0);
@@ -235,4 +371,4 @@ if("serviceWorker" in navigator){
     rs.forEach(function(r){r.unregister();});
   }).catch(function(){});
   if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}
-}
+  }

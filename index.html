@@ -16,6 +16,7 @@
   nav button.on{background:#e3f0ff;color:#0d47a1;font-weight:bold}
   #city{padding:10px;font-size:14px;color:#4a6a96}
   #next{margin:15px;padding:15px;background:#1565c0;color:#fff;border-radius:12px;font-size:20px;font-weight:bold}
+  #next:empty{display:none}
   .row{display:flex;justify-content:space-between;margin:8px 15px;padding:14px;background:#fff;border-radius:10px;font-size:18px;box-shadow:0 1px 4px rgba(21,101,192,.18)}
   .card{margin:10px 15px;padding:16px;background:#fff;border-radius:12px;font-size:18px;line-height:1.9;box-shadow:0 1px 4px rgba(21,101,192,.18)}
   .cnt{display:inline-block;margin-top:8px;padding:6px 16px;background:#1565c0;color:#fff;border-radius:20px;font-weight:bold}
@@ -23,6 +24,9 @@
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 15px}
   .grid div{padding:14px 4px;background:#fff;border-radius:10px;font-size:17px;box-shadow:0 1px 4px rgba(21,101,192,.18)}
   .src{font-size:14px;color:#4a6a96}
+  .manual{margin:15px;padding:14px;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(21,101,192,.18)}
+  .manual input{width:42%;padding:10px;margin:4px;border:1px solid #b9d3f5;border-radius:8px;font-size:15px}
+  .manual button{margin-top:8px;padding:10px 24px;background:#1565c0;color:#fff;border:0;border-radius:20px;font-size:15px}
 </style>
 </head>
 <body>
@@ -32,19 +36,17 @@
   <div id="city">جارٍ تحديد موقعك...</div>
   <div id="next"></div>
   <div id="list"></div>
+  <div class="manual">
+    <div>تغيير المدينة (بالإنجليزية)</div>
+    <input id="inCity" placeholder="City مثل Casablanca">
+    <input id="inCountry" placeholder="Country مثل Morocco">
+    <br><button onclick="byCity()">تحديث المواقيت</button>
+  </div>
 </div>
 
-<div id="t2" class="tab">
-  <div id="adhkar"></div>
-</div>
-
-<div id="t3" class="tab">
-  <div class="grid" id="names"></div>
-</div>
-
-<div id="t4" class="tab">
-  <div class="card" id="hadith"></div>
-</div>
+<div id="t2" class="tab"><div id="adhkar"></div></div>
+<div id="t3" class="tab"><div class="grid" id="asmaa"></div></div>
+<div id="t4" class="tab"><div class="card" id="hadith"></div></div>
 
 <nav>
   <button class="on" onclick="show(1,this)">المواقيت</button>
@@ -55,44 +57,88 @@
 
 <script>
 function show(n,b){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+  var tabs=document.querySelectorAll(".tab");
+  for(var i=0;i<tabs.length;i++){tabs[i].classList.remove("on");}
   document.getElementById("t"+n).classList.add("on");
-  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
+  var bs=document.querySelectorAll("nav button");
+  for(var j=0;j<bs.length;j++){bs[j].classList.remove("on");}
   b.classList.add("on");
 }
+</script>
 
+<script>
 /* ===== المواقيت ===== */
-const pn={Fajr:"الفجر",Sunrise:"الشروق",Dhuhr:"الظهر",Asr:"العصر",Maghrib:"المغرب",Isha:"العشاء"};
-let times={};
-function load(lat,lon){
-  fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=4`)
-  .then(r=>r.json()).then(d=>{
-    times=d.data.timings;
-    document.getElementById("city").textContent=d.data.date.readable+" | "+d.data.meta.timezone;
-    render();setInterval(render,1000);
-  }).catch(()=>document.getElementById("city").textContent="تعذّر تحميل المواقيت، تأكد من الإنترنت");
-}
-function render(){
-  const list=document.getElementById("list");let html="";
-  const now=new Date();let next=null,nextDiff=Infinity;
-  for(const k in pn){
-    const [h,m]=times[k].split(":").map(Number);
-    const t=new Date();t.setHours(h,m,0,0);
-    let diff=t-now;if(diff<0)diff+=86400000;
-    if(diff<nextDiff){nextDiff=diff;next=k}
-    html+=`<div class="row"><span>${pn[k]}</span><span>${times[k]}</span></div>`;
-  }
-  list.innerHTML=html;
-  const s=Math.floor(nextDiff/1000),hh=Math.floor(s/3600),mm=Math.floor(s%3600/60),ss=s%60;
-  document.getElementById("next").textContent=`${pn[next]} بعد ${hh}:${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;
-}
-navigator.geolocation.getCurrentPosition(
-  p=>load(p.coords.latitude,p.coords.longitude),
-  ()=>{document.getElementById("city").textContent="لم يتم السماح بالموقع، سيتم استخدام مكة المكرمة";load(21.4225,39.8262)}
-);
+var PN={Fajr:"الفجر",Sunrise:"الشروق",Dhuhr:"الظهر",Asr:"العصر",Maghrib:"المغرب",Isha:"العشاء"};
+var T={};
+var ticking=false;
 
+function setCity(msg){document.getElementById("city").textContent=msg;}
+
+function render(){
+  if(!T.Fajr){return;}
+  var html="",now=new Date(),next=null,nextDiff=Infinity;
+  for(var k in PN){
+    var p=T[k].split(" ")[0].split(":");
+    var t=new Date();t.setHours(Number(p[0]),Number(p[1]),0,0);
+    var diff=t-now;if(diff<0){diff+=86400000;}
+    if(diff<nextDiff){nextDiff=diff;next=k;}
+    html+='<div class="row"><span>'+PN[k]+'</span><span>'+p[0]+':'+p[1]+'</span></div>';
+  }
+  document.getElementById("list").innerHTML=html;
+  var s=Math.floor(nextDiff/1000),hh=Math.floor(s/3600),mm=Math.floor(s%3600/60),ss=s%60;
+  document.getElementById("next").textContent=PN[next]+" بعد "+hh+":"+(mm<10?"0":"")+mm+":"+(ss<10?"0":"")+ss;
+}
+
+function load(url,label){
+  setCity("جارٍ تحميل المواقيت...");
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    T=d.data.timings;
+    setCity(d.data.date.readable+" | "+label);
+    render();
+    if(!ticking){ticking=true;setInterval(render,1000);}
+  }).catch(function(){
+    setCity("تعذّر تحميل المواقيت، تأكد من الإنترنت أو اكتب مدينتك بالأسفل");
+  });
+}
+
+function byCoords(lat,lon){
+  load("https://api.aladhan.com/v1/timings?latitude="+lat+"&longitude="+lon+"&method=4","موقعك الحالي");
+}
+
+function byCity(){
+  var c=document.getElementById("inCity").value.trim();
+  var k=document.getElementById("inCountry").value.trim();
+  if(!c||!k){setCity("اكتب المدينة والدولة بالإنجليزية");return;}
+  try{localStorage.setItem("salat_city",c);localStorage.setItem("salat_country",k);}catch(e){}
+  load("https://api.aladhan.com/v1/timingsByCity?city="+encodeURIComponent(c)+"&country="+encodeURIComponent(k)+"&method=4",c);
+}
+
+(function start(){
+  var c="",k="";
+  try{c=localStorage.getItem("salat_city")||"";k=localStorage.getItem("salat_country")||"";}catch(e){}
+  if(c&&k){
+    document.getElementById("inCity").value=c;
+    document.getElementById("inCountry").value=k;
+    byCity();
+    return;
+  }
+  if(!navigator.geolocation){setCity("الموقع غير متاح، اكتب مدينتك بالأسفل");return;}
+  navigator.geolocation.getCurrentPosition(
+    function(p){byCoords(p.coords.latitude,p.coords.longitude);},
+    function(){setCity("تعذّر تحديد الموقع، اكتب مدينتك بالأسفل");},
+    {timeout:8000,maximumAge:600000}
+  );
+  setTimeout(function(){
+    if(!T.Fajr&&document.getElementById("city").textContent.indexOf("جارٍ تحديد")===0){
+      setCity("تعذّر تحديد الموقع، اكتب مدينتك بالأسفل");
+    }
+  },10000);
+})();
+</script>
+
+<script>
 /* ===== الأذكار ===== */
-const adhkar=[
+var adhkar=[
  {t:"أعوذ بالله من الشيطان الرجيم: ﴿اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...﴾ (آية الكرسي)",c:1},
  {t:"سورة الإخلاص، وسورة الفلق، وسورة الناس (صباحًا ومساءً)",c:3},
  {t:"أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير",c:1},
@@ -108,21 +154,40 @@ const adhkar=[
  {t:"الله أكبر (بعد الصلاة)",c:34},
  {t:"اللهم صلِّ وسلّم على نبينا محمد",c:10}
 ];
-document.getElementById("adhkar").innerHTML=adhkar.map((a,i)=>
- `<div class="card" id="a${i}" onclick="tap(${i})">${a.t}<br><span class="cnt" id="c${i}">${a.c}</span></div>`).join("");
-const left=adhkar.map(a=>a.c);
+var leftCount=[];
+(function(){
+  var html="";
+  for(var i=0;i<adhkar.length;i++){
+    leftCount.push(adhkar[i].c);
+    html+='<div class="card" id="a'+i+'" onclick="tap('+i+')">'+adhkar[i].t+'<br><span class="cnt" id="c'+i+'">'+adhkar[i].c+'</span></div>';
+  }
+  document.getElementById("adhkar").innerHTML=html;
+})();
 function tap(i){
-  if(left[i]>0){left[i]--;document.getElementById("c"+i).textContent=left[i];
-   if(left[i]==0)document.getElementById("a"+i).classList.add("done");
-   if(navigator.vibrate)navigator.vibrate(30);}
+  if(leftCount[i]>0){
+    leftCount[i]--;
+    document.getElementById("c"+i).textContent=leftCount[i];
+    if(leftCount[i]===0){document.getElementById("a"+i).classList.add("done");}
+    if(navigator.vibrate){navigator.vibrate(30);}
+  }
 }
+</script>
 
+<script>
 /* ===== أسماء الله الحسنى ===== */
-const names="الرحمن،الرحيم،الملك،القدوس،السلام،المؤمن،المهيمن،العزيز،الجبار،المتكبر،الخالق،البارئ،المصور،الغفار،القهار،الوهاب،الرزاق،الفتاح،العليم،القابض،الباسط،الخافض،الرافع،المعز،المذل،السميع،البصير،الحكم،العدل،اللطيف،الخبير،الحليم،العظيم،الغفور،الشكور،العلي،الكبير،الحفيظ،المقيت،الحسيب،الجليل،الكريم،الرقيب،المجيب،الواسع،الحكيم،الودود،المجيد،الباعث،الشهيد،الحق،الوكيل،القوي،المتين،الولي،الحميد،المحصي،المبدئ،المعيد،المحيي،المميت،الحي،القيوم،الواجد،الماجد،الواحد،الأحد،الصمد،القادر،المقتدر،المقدم،المؤخر،الأول،الآخر،الظاهر،الباطن،الوالي،المتعالي،البر،التواب،المنتقم،العفو،الرؤوف،مالك الملك،ذو الجلال والإكرام،المقسط،الجامع،الغني،المغني،المانع،الضار،النافع،النور،الهادي،البديع،الباقي،الوارث،الرشيد،الصبور".split("،");
-document.getElementById("names").innerHTML=names.map((n,i)=>`<div>${i+1}<br>${n}</div>`).join("");
+var asmaaList="الرحمن،الرحيم،الملك،القدوس،السلام،المؤمن،المهيمن،العزيز،الجبار،المتكبر،الخالق،البارئ،المصور،الغفار،القهار،الوهاب،الرزاق،الفتاح،العليم،القابض،الباسط،الخافض،الرافع،المعز،المذل،السميع،البصير،الحكم،العدل،اللطيف،الخبير،الحليم،العظيم،الغفور،الشكور،العلي،الكبير،الحفيظ،المقيت،الحسيب،الجليل،الكريم،الرقيب،المجيب،الواسع،الحكيم،الودود،المجيد،الباعث،الشهيد،الحق،الوكيل،القوي،المتين،الولي،الحميد،المحصي،المبدئ،المعيد،المحيي،المميت،الحي،القيوم،الواجد،الماجد،الواحد،الأحد،الصمد،القادر،المقتدر،المقدم،المؤخر،الأول،الآخر،الظاهر،الباطن،الوالي،المتعالي،البر،التواب،المنتقم،العفو،الرؤوف،مالك الملك،ذو الجلال والإكرام،المقسط،الجامع،الغني،المغني،المانع،الضار،النافع،النور،الهادي،البديع،الباقي،الوارث،الرشيد،الصبور".split("،");
+(function(){
+  var html="";
+  for(var i=0;i<asmaaList.length;i++){
+    html+="<div>"+(i+1)+"<br>"+asmaaList[i]+"</div>";
+  }
+  document.getElementById("asmaa").innerHTML=html;
+})();
+</script>
 
+<script>
 /* ===== حديث اليوم ===== */
-const hadiths=[
+var hadiths=[
  ["إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى","متفق عليه"],
  ["من حسن إسلام المرء تركه ما لا يعنيه","رواه الترمذي"],
  ["لا يؤمن أحدكم حتى يحب لأخيه ما يحب لنفسه","متفق عليه"],
@@ -141,4 +206,20 @@ const hadiths=[
  ["من دل على خير فله مثل أجر فاعله","رواه مسلم"],
  ["إن الله لا ينظر إلى صوركم وأموالكم، ولكن ينظر إلى قلوبكم وأعمالكم","رواه مسلم"]
 ];
-const day=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/86
+(function(){
+  var d=new Date();
+  var dayNum=Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);
+  var item=hadiths[dayNum%hadiths.length];
+  document.getElementById("hadith").innerHTML="قال رسول الله ﷺ:<br>«"+item[0]+"»<br><span class='src'>"+item[1]+"</span>";
+})();
+
+/* إلغاء أي نسخة قديمة محفوظة (كاش) */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(rs){
+    rs.forEach(function(r){r.unregister();});
+  }).catch(function(){});
+  if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}
+}
+</script>
+</body>
+</html>

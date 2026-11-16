@@ -8,35 +8,52 @@
 <link rel="icon" href="icon-192.png">
 <title>تطبيق صلاة</title>
 <style>
-  body{margin:0;font-family:sans-serif;background:#f4f8ff;color:#12305a;text-align:center;padding-bottom:70px}
-  h1{margin:0;padding:18px;background:#1565c0;color:#fff;font-size:22px}
+  :root{--s:1;--bg:#f4f8ff;--fg:#12305a;--card:#fff;--pri:#1565c0;--sub:#4a6a96;--line:#cfe0fb;--sel:#e3f0ff;--link:#1565c0;--shadow:rgba(21,101,192,.18)}
+  body.dark{--bg:#0e1726;--fg:#e6eefc;--card:#172338;--pri:#2a7de1;--sub:#9db4d6;--line:#25344f;--sel:#1f3556;--link:#8fc0ff;--shadow:rgba(0,0,0,.4)}
+  html{font-size:calc(16px * var(--s))}
+  body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--fg);text-align:center;padding-bottom:70px;font-size:1rem}
+  h1{position:relative;margin:0;padding:18px;background:var(--pri);color:#fff;font-size:1.35rem}
+  #gear{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:42px;height:42px;background:rgba(255,255,255,.2);border:0;border-radius:12px;font-size:1.3rem;color:#fff}
   .tab{display:none;padding-top:8px}.tab.on{display:block}
-  nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid #cfe0fb}
-  nav button{flex:1;padding:14px 4px;background:none;border:0;color:#1565c0;font-size:14px}
-  nav button.on{background:#e3f0ff;color:#0d47a1;font-weight:bold}
-  #city{padding:10px;font-size:14px;color:#4a6a96}
-  #next{margin:15px;padding:15px;background:#1565c0;color:#fff;border-radius:12px;font-size:20px;font-weight:bold}
+  nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line)}
+  nav button{flex:1;padding:14px 4px;background:none;border:0;color:var(--link);font-size:.9rem}
+  nav button.on{background:var(--sel);font-weight:bold}
+  #city{padding:10px;font-size:.9rem;color:var(--sub)}
+  #next{margin:15px;padding:15px;background:var(--pri);color:#fff;border-radius:12px;font-size:1.25rem;font-weight:bold}
   #next:empty{display:none}
-  .row{display:flex;justify-content:space-between;margin:8px 15px;padding:14px;background:#fff;border-radius:10px;font-size:18px;box-shadow:0 1px 4px rgba(21,101,192,.18)}
-  .card{margin:10px 15px;padding:16px;background:#fff;border-radius:12px;font-size:18px;line-height:1.9;box-shadow:0 1px 4px rgba(21,101,192,.18)}
-  .cnt{display:inline-block;margin-top:8px;padding:6px 16px;background:#1565c0;color:#fff;border-radius:20px;font-weight:bold}
+  .row{display:flex;justify-content:space-between;margin:8px 15px;padding:14px;background:var(--card);border-radius:10px;font-size:1.1rem;box-shadow:0 1px 4px var(--shadow)}
+  .card{margin:10px 15px;padding:16px;background:var(--card);border-radius:12px;font-size:1.1rem;line-height:1.9;box-shadow:0 1px 4px var(--shadow)}
+  .cnt{display:inline-block;margin-top:8px;padding:6px 16px;background:var(--pri);color:#fff;border-radius:20px;font-weight:bold}
   .done{opacity:.45}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 15px}
-  .grid div{padding:14px 4px;background:#fff;border-radius:10px;font-size:17px;box-shadow:0 1px 4px rgba(21,101,192,.18)}
-  .src{font-size:14px;color:#4a6a96}
-  .manual{margin:15px;padding:14px;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(21,101,192,.18)}
-  .manual input{width:42%;padding:10px;margin:4px;border:1px solid #b9d3f5;border-radius:8px;font-size:15px}
-  .manual button{margin-top:8px;padding:10px 24px;background:#1565c0;color:#fff;border:0;border-radius:20px;font-size:15px}
+  .grid div{padding:14px 4px;background:var(--card);border-radius:10px;font-size:1.05rem;box-shadow:0 1px 4px var(--shadow)}
+  .src{font-size:.9rem;color:var(--sub)}
+  .manual{margin:15px;padding:14px;background:var(--card);border-radius:12px;box-shadow:0 1px 4px var(--shadow)}
+  .manual input{width:42%;padding:10px;margin:4px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;font-size:.95rem}
+  .manual button{margin-top:8px;padding:10px 24px;background:var(--pri);color:#fff;border:0;border-radius:20px;font-size:.95rem}
+
+  /* نافذة الإعدادات */
+  #ov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:50;align-items:center;justify-content:center}
+  #ov.open{display:flex}
+  #box{width:min(90vw,360px);aspect-ratio:1/1;overflow:auto;background:var(--card);color:var(--fg);border-radius:18px;padding:12px;box-sizing:border-box;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .bh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .bh b{font-size:1.1rem}
+  .bh button{border:0;background:var(--sel);color:var(--link);width:34px;height:34px;border-radius:50%;font-size:1rem}
+  .lbl{font-size:.9rem;color:var(--sub);margin:4px 0}
+  .big{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin:4px 0;padding:8px;border:0;border-radius:12px;background:var(--pri);color:#fff}
+  .big .arr{font-size:1.2rem}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+  .g2 button{padding:10px 4px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;font-size:.8rem;line-height:1.4}
 </style>
 </head>
 <body>
-<h1>🕌 تطبيق صلاة</h1>
+<h1>🕌 تطبيق صلاة<button id="gear" onclick="openSet()">⚙️</button></h1>
 
 <div id="t1" class="tab on">
   <div id="city">جارٍ تحديد موقعك...</div>
   <div id="next"></div>
   <div id="list"></div>
-  <div class="manual">
+  <div class="manual" id="manual">
     <div>تغيير المدينة (بالإنجليزية)</div>
     <input id="inCity" placeholder="City مثل Casablanca">
     <input id="inCountry" placeholder="Country مثل Morocco">
@@ -55,6 +72,23 @@
   <button onclick="show(4,this)">حديث اليوم</button>
 </nav>
 
+<div id="ov" onclick="if(event.target===this)closeSet()">
+  <div id="box">
+    <div class="bh"><b>⚙️ الإعدادات</b><button onclick="closeSet()">✕</button></div>
+    <div class="lbl">حجم الخط: <span id="pct">100%</span></div>
+    <button class="big" onclick="fs(1)"><span class="arr">⬆</span><span style="font-size:1.7rem;line-height:1">ض</span></button>
+    <button class="big" onclick="fs(-1)"><span class="arr">⬇</span><span style="font-size:.85rem;line-height:1">ض</span></button>
+    <div class="g2">
+      <button id="bDark" onclick="toggleDark()">🌙 الوضع الليلي</button>
+      <button id="bFmt" onclick="toggleFmt()">🕐 نظام الوقت</button>
+      <button id="bVib" onclick="toggleVib()">📳 الاهتزاز</button>
+      <button onclick="resetAdhkar()">🔄 تصفير العدّادات</button>
+      <button onclick="goCity()">🏙️ تغيير المدينة</button>
+      <button onclick="resetFont()">↺ إعادة حجم الخط</button>
+    </div>
+  </div>
+</div>
+
 <script>
 function show(n,b){
   var tabs=document.querySelectorAll(".tab");
@@ -67,11 +101,69 @@ function show(n,b){
 </script>
 
 <script>
+/* ===== الإعدادات ===== */
+var S={s:1,dark:0,h12:0,vib:1};
+try{
+  var saved=JSON.parse(localStorage.getItem("salat_set")||"{}");
+  for(var key in saved){S[key]=saved[key];}
+}catch(e){}
+
+function saveSet(){try{localStorage.setItem("salat_set",JSON.stringify(S));}catch(e){}}
+
+function applySet(){
+  document.documentElement.style.setProperty("--s",S.s);
+  if(S.dark){document.body.classList.add("dark");}else{document.body.classList.remove("dark");}
+  document.getElementById("pct").textContent=Math.round(S.s*100)+"%";
+  document.getElementById("bDark").textContent=S.dark?"☀️ الوضع النهاري":"🌙 الوضع الليلي";
+  document.getElementById("bFmt").textContent=S.h12?"🕐 الوقت: 12 ساعة":"🕐 الوقت: 24 ساعة";
+  document.getElementById("bVib").textContent=S.vib?"📳 الاهتزاز: يعمل":"📴 الاهتزاز: متوقف";
+}
+function openSet(){document.getElementById("ov").classList.add("open");}
+function closeSet(){document.getElementById("ov").classList.remove("open");}
+function fs(dir){
+  S.s=Math.round((S.s+dir*0.1)*10)/10;
+  if(S.s<0.8){S.s=0.8;}
+  if(S.s>1.6){S.s=1.6;}
+  saveSet();applySet();
+}
+function resetFont(){S.s=1;saveSet();applySet();}
+function toggleDark(){S.dark=S.dark?0:1;saveSet();applySet();}
+function toggleFmt(){S.h12=S.h12?0:1;saveSet();applySet();render();}
+function toggleVib(){
+  S.vib=S.vib?0:1;saveSet();applySet();
+  if(S.vib&&navigator.vibrate){navigator.vibrate(40);}
+}
+function goCity(){
+  closeSet();
+  show(1,document.querySelectorAll("nav button")[0]);
+  var m=document.getElementById("manual");
+  m.scrollIntoView();
+  document.getElementById("inCity").focus();
+}
+function resetAdhkar(){
+  for(var i=0;i<adhkar.length;i++){
+    leftCount[i]=adhkar[i].c;
+    document.getElementById("c"+i).textContent=adhkar[i].c;
+    document.getElementById("a"+i).classList.remove("done");
+  }
+  closeSet();
+}
+applySet();
+</script>
+
+<script>
 /* ===== المواقيت ===== */
 var PN={Fajr:"الفجر",Sunrise:"الشروق",Dhuhr:"الظهر",Asr:"العصر",Maghrib:"المغرب",Isha:"العشاء"};
 var T={};
 var ticking=false;
 
+function pad(n){return n<10?"0"+n:""+n;}
+function fmt(h,m){
+  if(!S.h12){return pad(h)+":"+pad(m);}
+  var ap=h>=12?"م":"ص";
+  var hh=h%12;if(hh===0){hh=12;}
+  return hh+":"+pad(m)+" "+ap;
+}
 function setCity(msg){document.getElementById("city").textContent=msg;}
 
 function render(){
@@ -79,14 +171,15 @@ function render(){
   var html="",now=new Date(),next=null,nextDiff=Infinity;
   for(var k in PN){
     var p=T[k].split(" ")[0].split(":");
-    var t=new Date();t.setHours(Number(p[0]),Number(p[1]),0,0);
+    var h=Number(p[0]),m=Number(p[1]);
+    var t=new Date();t.setHours(h,m,0,0);
     var diff=t-now;if(diff<0){diff+=86400000;}
     if(diff<nextDiff){nextDiff=diff;next=k;}
-    html+='<div class="row"><span>'+PN[k]+'</span><span>'+p[0]+':'+p[1]+'</span></div>';
+    html+='<div class="row"><span>'+PN[k]+'</span><span>'+fmt(h,m)+'</span></div>';
   }
   document.getElementById("list").innerHTML=html;
   var s=Math.floor(nextDiff/1000),hh=Math.floor(s/3600),mm=Math.floor(s%3600/60),ss=s%60;
-  document.getElementById("next").textContent=PN[next]+" بعد "+hh+":"+(mm<10?"0":"")+mm+":"+(ss<10?"0":"")+ss;
+  document.getElementById("next").textContent=PN[next]+" بعد "+hh+":"+pad(mm)+":"+pad(ss);
 }
 
 function load(url,label){
@@ -168,7 +261,7 @@ function tap(i){
     leftCount[i]--;
     document.getElementById("c"+i).textContent=leftCount[i];
     if(leftCount[i]===0){document.getElementById("a"+i).classList.add("done");}
-    if(navigator.vibrate){navigator.vibrate(30);}
+    if(S.vib&&navigator.vibrate){navigator.vibrate(30);}
   }
 }
 </script>
@@ -198,28 +291,4 @@ var hadiths=[
  ["أحب الأعمال إلى الله أدومها وإن قل","متفق عليه"],
  ["كلمتان خفيفتان على اللسان، ثقيلتان في الميزان، حبيبتان إلى الرحمن: سبحان الله وبحمده، سبحان الله العظيم","متفق عليه"],
  ["ليس الشديد بالصرعة، إنما الشديد الذي يملك نفسه عند الغضب","متفق عليه"],
- ["من سلك طريقًا يلتمس فيه علمًا سهّل الله له به طريقًا إلى الجنة","رواه مسلم"],
- ["لا تغضب","رواه البخاري"],
- ["المسلم من سلم المسلمون من لسانه ويده","متفق عليه"],
- ["الكلمة الطيبة صدقة","متفق عليه"],
- ["اتق الله حيثما كنت، وأتبع السيئة الحسنة تمحها، وخالق الناس بخلق حسن","رواه الترمذي"],
- ["من دل على خير فله مثل أجر فاعله","رواه مسلم"],
- ["إن الله لا ينظر إلى صوركم وأموالكم، ولكن ينظر إلى قلوبكم وأعمالكم","رواه مسلم"]
-];
-(function(){
-  var d=new Date();
-  var dayNum=Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);
-  var item=hadiths[dayNum%hadiths.length];
-  document.getElementById("hadith").innerHTML="قال رسول الله ﷺ:<br>«"+item[0]+"»<br><span class='src'>"+item[1]+"</span>";
-})();
-
-/* إلغاء أي نسخة قديمة محفوظة (كاش) */
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(rs){
-    rs.forEach(function(r){r.unregister();});
-  }).catch(function(){});
-  if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}
-}
-</script>
-</body>
-</html>
+ ["من سلك طريقًا يلتمس فيه علمًا سهّل الله

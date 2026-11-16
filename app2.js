@@ -79,13 +79,31 @@ CATS.push(
  ]}
 );
 
-/* ===== منطق الأذكار ===== */
-var curCat=-1,cnt=[];
+/* ===== تنسيق شاشة الذكر ===== */
+(function(){
+  var css=".vw{display:flex;flex-direction:column;min-height:calc(100vh - 240px);margin:0 15px}"
+  +".vtxt{flex:1;display:flex;align-items:center;justify-content:center;margin:10px 0;padding:22px 18px;background:var(--card);border-radius:18px;box-shadow:0 1px 5px var(--shadow);font-family:'Amiri Quran','Scheherazade New','Traditional Arabic',serif;font-size:1.35rem;line-height:2.1;overflow-wrap:anywhere}"
+  +".vctl{padding:8px 0 6px}"
+  +".vprog{color:var(--sub);font-size:.95rem}"
+  +".vrow{display:flex;align-items:center;justify-content:space-between;margin:8px 6px}"
+  +".vnav{width:56px;height:56px;border:0;background:none;color:var(--link);font-size:2.8rem;line-height:1}"
+  +".vnav.off{opacity:.3}"
+  +".vcirc{width:104px;height:104px;border-radius:50%;border:3px solid var(--line);background:var(--card);color:var(--fg);font-size:1.9rem;box-shadow:0 1px 5px var(--shadow)}"
+  +".vcirc.ok{background:var(--pri);border-color:var(--pri);color:#fff}"
+  +".vlbl{color:var(--sub);font-size:.95rem}";
+  var st=document.createElement("style");
+  st.textContent=css;
+  document.head.appendChild(st);
+})();
+
+/* ===== منطق الأذكار (عدّ تصاعدي) ===== */
+var curCat=-1,cnt=[],vi=0;
+
 function initCounts(){
   cnt=[];
   for(var i=0;i<CATS.length;i++){
     var a=[];
-    for(var j=0;j<CATS[i].d.length;j++){a.push(CATS[i].d[j][1]);}
+    for(var j=0;j<CATS[i].d.length;j++){a.push(0);}
     cnt.push(a);
   }
 }
@@ -100,20 +118,32 @@ initCounts();
   document.getElementById("adList").innerHTML=html;
 })();
 
-function renderCat(i){
-  var html="";
-  for(var j=0;j<CATS[i].d.length;j++){
-    var left=cnt[i][j];
-    html+='<div class="card'+(left===0?' done':'')+'" id="d'+j+'" onclick="tapD('+j+')">'+CATS[i].d[j][0]+'<br><span class="cnt" id="k'+j+'">'+(left===0?"✓":left)+'</span></div>';
-  }
+function timesLabel(n){
+  if(n===1){return "مرة واحدة";}
+  if(n===2){return "مرتان";}
+  if(n<=10){return n+" مرات";}
+  return n+" مرة";
+}
+
+function renderView(){
+  var d=CATS[curCat].d,n=d.length,target=d[vi][1],c=cnt[curCat][vi];
+  var html='<div class="vw"><div class="vtxt"><div>'+d[vi][0]+'</div></div>'
+   +'<div class="vctl"><div class="vprog">'+(vi+1)+'/'+n+'</div>'
+   +'<div class="vrow">'
+   +'<button class="vnav'+(vi===0?' off':'')+'" onclick="goV(-1)">›</button>'
+   +'<button class="vcirc'+(c>=target?' ok':'')+'" id="vc" onclick="tapV()">'+c+'</button>'
+   +'<button class="vnav'+(vi===n-1?' off':'')+'" onclick="goV(1)">‹</button>'
+   +'</div>'
+   +'<div class="vlbl">'+timesLabel(target)+'</div></div></div>';
   document.getElementById("adItems").innerHTML=html;
 }
+
 function openCat(i){
-  curCat=i;
+  curCat=i;vi=0;
   document.getElementById("adList").style.display="none";
   document.getElementById("adView").style.display="block";
   document.getElementById("catTitle").textContent=CATS[i].n;
-  renderCat(i);
+  renderView();
   window.scrollTo(0,0);
 }
 function backCat(){
@@ -122,17 +152,37 @@ function backCat(){
   document.getElementById("adList").style.display="block";
   window.scrollTo(0,0);
 }
-function tapD(j){
-  var i=curCat;
-  if(i<0||cnt[i][j]<=0){return;}
-  cnt[i][j]--;
-  document.getElementById("k"+j).textContent=cnt[i][j]===0?"✓":cnt[i][j];
-  if(cnt[i][j]===0){document.getElementById("d"+j).classList.add("done");}
+function goV(dir){
+  if(curCat<0){return;}
+  var n=CATS[curCat].d.length,nj=vi+dir;
+  if(nj<0||nj>=n){return;}
+  vi=nj;
+  renderView();
+  window.scrollTo(0,0);
+}
+function tapV(){
+  if(curCat<0){return;}
+  var i=curCat,j=vi,n=CATS[i].d.length,target=CATS[i].d[j][1];
+  if(cnt[i][j]>=target){
+    if(j<n-1){goV(1);}
+    return;
+  }
+  cnt[i][j]++;
+  var el=document.getElementById("vc");
+  el.textContent=cnt[i][j];
   if(S.vib&&navigator.vibrate){navigator.vibrate(30);}
+  if(cnt[i][j]>=target){
+    el.classList.add("ok");
+    if(j<n-1){
+      setTimeout(function(){
+        if(curCat===i&&vi===j){goV(1);}
+      },450);
+    }
+  }
 }
 function doResetAdhkar(){
   initCounts();
-  if(curCat>=0){renderCat(curCat);}
+  if(curCat>=0){renderView();}
 }
 
 /* ===== أسماء الله الحسنى (نسخة احتياطية، تُستبدل بملف asmaa.js) ===== */
@@ -185,4 +235,4 @@ if("serviceWorker" in navigator){
     rs.forEach(function(r){r.unregister();});
   }).catch(function(){});
   if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}
-  }
+}

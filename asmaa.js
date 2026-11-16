@@ -287,12 +287,14 @@ window.toggleBell=function(k){
   });
 };
 
-/* ----- الصوت ----- */
-var cur=null,tokA=0,pend=null;
+/* ----- الصوت: تشويش راديو ثم الأذان ثم تشويش راديو ----- */
+var cur=null,stat=null,tokA=0,pend=null;
+
 function stopA(){
   tokA++;
   pend=null;
   if(cur){try{cur.pause();}catch(e){}cur=null;}
+  if(stat){stat.stop();stat=null;}
   hideBar();
 }
 window.stopAdhan=stopA;
@@ -314,42 +316,108 @@ function beep(n){
   }catch(e){}
 }
 
-function tryPlay(srcs,i,tok,name){
-  if(tok!==tokA){return;}
-  if(i>=srcs.length){
-    beep(4);
-    setNote("ما لقيت ملف الأذان adhan.mp3 في المستودع، فشغّلت صوت تنبيه بدله");
-    setTimeout(function(){if(tok===tokA){hideBar();}},6000);
-    return;
+/* صوت تشويش الراديو (يُولَّد بالكود بدون ملف) */
+function staticNoise(ms,done,blocked){
+  var C=window.AudioContext||window.webkitAudioContext;
+  if(!C){done();return null;}
+  var c,src=null,dead=false;
+  var h={stop:function(){
+    dead=true;
+    try{if(src){src.stop();}}catch(e){}
+    try{if(c){c.close();}}catch(e){}
+  }};
+  try{c=new C();}catch(e){done();return null;}
+  function go(){
+    if(dead){return;}
+    if(c.state!=="running"){
+      try{c.close();}catch(e){}
+      if(blocked){blocked();}
+      return;
+    }
+    var len=Math.floor(c.sampleRate*ms/1000);
+    var buf=c.createBuffer(1,len,c.sampleRate);
+    var d=buf.getChannelData(0),env=0.5,fade=Math.floor(c.sampleRate*0.2);
+    for(var i=0;i<len;i++){
+      if(i%900===0){env=0.2+Math.random()*0.8;}
+      var v=(Math.random()*2-1)*env;
+      if(i<fade){v*=i/fade;}
+      if(i>len-fade){v*=(len-i)/fade;}
+      d[i]=v;
+    }
+    src=c.createBufferSource();
+    src.buffer=buf;
+    var f=c.createBiquadFilter();
+    f.type="bandpass";
+    f.Q.value=0.5;
+    for(var t=0;t<ms;t+=110){
+      f.frequency.setValueAtTime(700+Math.random()*3800,c.currentTime+t/1000);
+    }
+    var g=c.createGain();
+    g.gain.value=0.6;
+    src.connect(f);f.connect(g);g.connect(c.destination);
+    src.onended=function(){
+      try{c.close();}catch(e){}
+      if(!dead){done();}
+    };
+    src.start();
   }
+  var r=c.resume?c.resume():null;
+  if(r&&r.then){r.then(go,go);}else{go();}
+  return h;
+}
+
+function playFile(srcs,i,tok,onEnd,onFail){
+  if(tok!==tokA){return;}
+  if(i>=srcs.length){onFail();return;}
   var a=new Audio(srcs[i]);
   cur=a;
-  a.onerror=function(){tryPlay(srcs,i+1,tok,name);};
-  a.onended=function(){if(tok===tokA){stopA();}};
+  a.onerror=function(){playFile(srcs,i+1,tok,onEnd,onFail);};
+  a.onended=onEnd;
   var pr=a.play();
   if(pr&&pr.catch){
     pr.catch(function(err){
       if(tok!==tokA){return;}
-      if(err&&err.name==="NotAllowedError"){
-        pend={srcs:srcs,i:i,name:name};
-        showBar("🕌 حان وقت "+name,'<button onclick="resumeAdhan()">▶ تشغيل</button>');
-      }
+      if(err&&err.name==="NotAllowedError"){onFail("blocked");}
     });
   }
+}
+
+function playSeq(srcs,name){
+  stopA();
+  var tok=tokA;
+  showBar("🕌 "+name,'<button onclick="stopAdhan()">⏹ إيقاف</button>');
+  function blocked(){
+    if(tok!==tokA){return;}
+    pend={srcs:srcs,name:name};
+    showBar("🕌 "+name,'<button onclick="resumeAdhan()">▶ تشغيل</button>');
+  }
+  function endAll(){if(tok===tokA){stopA();}}
+  stat=staticNoise(2500,function(){
+    if(tok!==tokA){return;}
+    stat=null;
+    playFile(srcs,0,tok,function(){
+      if(tok!==tokA){return;}
+      stat=staticNoise(2500,endAll,endAll);
+    },function(why){
+      if(tok!==tokA){return;}
+      if(why==="blocked"){blocked();return;}
+      beep(3);
+      setNote("ما لقيت ملف الأذان adhan.mp3 في المستودع، ارفعه أولًا");
+      setTimeout(endAll,5000);
+    });
+  },blocked);
 }
 window.resumeAdhan=function(){
   if(!pend){return;}
   var p=pend;
-  pend=null;
-  showBar("🕌 "+p.name,'<button onclick="stopAdhan()">⏹ إيقاف</button>');
-  tryPlay(p.srcs,p.i,tokA,p.name);
+  playSeq(p.srcs,p.name);
 };
 
 function fire(k){
   var name=PN[k];
-  stopA();
-  var tok=tokA;
   if(k==="Sunrise"){
+    stopA();
+    var tok=tokA;
     notify("حان وقت الشروق","☀️");
     showBar("🌅 حان وقت الشروق",'<button onclick="stopAdhan()">✕</button>');
     beep(3);
@@ -357,17 +425,13 @@ function fire(k){
     return;
   }
   notify("حان وقت صلاة "+name,"حيّ على الصلاة");
-  showBar("🕌 حان وقت صلاة "+name,'<button onclick="stopAdhan()">⏹ إيقاف</button>');
   var srcs=(k==="Fajr")?["adhan-fajr.mp3","adhan.mp3"]:["adhan.mp3"];
-  tryPlay(srcs,0,tok,"صلاة "+name);
+  playSeq(srcs,"حان وقت صلاة "+name);
 }
 
 test.onclick=function(){
-  stopA();
-  var tok=tokA;
   setNote("");
-  showBar("🔊 تجربة الأذان",'<button onclick="stopAdhan()">⏹ إيقاف</button>');
-  tryPlay(["adhan.mp3"],0,tok,"التجربة");
+  playSeq(["adhan.mp3"],"تجربة الأذان");
 };
 
 /* ----- الفحص كل ثانية ----- */

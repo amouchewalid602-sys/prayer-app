@@ -143,3 +143,255 @@ window.toggleAsm=function(i){
 document.getElementById("asrch").addEventListener("input",function(){draw(this.value);});
 draw("");
 })();
+
+/* ===== أجراس الأذان في المواقيت ===== */
+(function(){
+try{
+var BK="salat_bells",FK="salat_fired";
+function getB(){try{return JSON.parse(localStorage.getItem(BK)||"{}");}catch(e){return {};}}
+function setB(o){try{localStorage.setItem(BK,JSON.stringify(o));}catch(e){}}
+function getF(){try{return JSON.parse(localStorage.getItem(FK)||"{}");}catch(e){return {};}}
+function setF(o){try{localStorage.setItem(FK,JSON.stringify(o));}catch(e){}}
+function dayKey(d){return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+function timeOf(k){
+  var p=T[k].split(" ")[0].split(":");
+  var t=new Date();
+  t.setHours(Number(p[0]),Number(p[1]),0,0);
+  return t;
+}
+
+var oldList=document.getElementById("list");
+if(!oldList){return;}
+
+var css="#list{display:none}"
++".prow{--rb:var(--card);display:flex;align-items:center;margin:8px 15px;padding:8px 14px;background:var(--rb);border-radius:10px;font-size:1.1rem;box-shadow:0 1px 4px var(--shadow)}"
++".prow.nx{--rb:var(--sel)}"
++".prow .pt{margin-inline-start:18px}"
++".prow .bell{margin-inline-start:auto;border:0;background:none;padding:6px;line-height:0}"
++".btest{display:block;margin:10px auto;padding:10px 22px;border:1px solid var(--line);background:var(--card);color:var(--link);border-radius:20px;font-size:.95rem}"
++".bmsg{margin:6px 18px;font-size:.85rem;color:var(--sub);line-height:1.7}"
++"#abar{position:fixed;top:0;left:0;right:0;z-index:70;display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--pri);color:#fff;font-size:1rem}"
++"#abar button{border:0;background:rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:14px;font-size:.95rem}";
+var st=document.createElement("style");
+st.textContent=css;
+document.head.appendChild(st);
+
+var box=document.createElement("div");
+box.id="list2";
+oldList.parentNode.insertBefore(box,oldList.nextSibling);
+var test=document.createElement("button");
+test.className="btest";
+test.textContent="🔊 تجربة الأذان";
+box.parentNode.insertBefore(test,box.nextSibling);
+var msg=document.createElement("div");
+msg.className="bmsg";
+test.parentNode.insertBefore(msg,test.nextSibling);
+var bar=document.createElement("div");
+bar.id="abar";
+document.body.appendChild(bar);
+
+function setNote(t){msg.textContent=t||"";}
+function showBar(txt,btn){bar.innerHTML="<span>"+txt+"</span>"+btn;bar.style.display="flex";}
+function hideBar(){bar.style.display="none";}
+
+/* ----- الجرس ----- */
+function bellSvg(on){
+  var col=on?"#d4a02a":"#8a94a3";
+  return '<svg viewBox="0 0 24 24" width="30" height="30"><path fill="'+col+'" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>'
+  +(on?'':'<line x1="4" y1="3" x2="20" y2="21" style="stroke:var(--rb)" stroke-width="4.5"/><line x1="4" y1="3" x2="20" y2="21" stroke="'+col+'" stroke-width="2"/>')
+  +'</svg>';
+}
+function nextKey(){
+  var now=new Date(),best=null,bd=Infinity;
+  for(var k in PN){
+    var d=timeOf(k)-now;
+    if(d<0){d+=86400000;}
+    if(d<bd){bd=d;best=k;}
+  }
+  return best;
+}
+var lastSig="";
+function drawRows(force){
+  if(typeof T==="undefined"||!T.Fajr){return;}
+  var b=getB(),nk=nextKey();
+  var sig=(S.h12?"12":"24")+"|"+nk+"|"+JSON.stringify(b)+"|"+JSON.stringify(T);
+  if(!force&&sig===lastSig){return;}
+  lastSig=sig;
+  var h="";
+  for(var k in PN){
+    var p=T[k].split(" ")[0].split(":");
+    h+='<div class="prow'+(k===nk?' nx':'')+'"><span class="pn">'+PN[k]+'</span><span class="pt">'+fmt(Number(p[0]),Number(p[1]))+'</span><button class="bell" onclick="toggleBell(\''+k+'\')">'+bellSvg(!!b[k])+'</button></div>';
+  }
+  box.innerHTML=h;
+}
+
+/* ----- الأذونات والإشعارات ----- */
+function regSW(){
+  if(!("serviceWorker" in navigator)){return;}
+  setTimeout(function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  },2500);
+}
+function askPerm(cb){
+  if(!("Notification" in window)){
+    setNote("متصفحك لا يدعم الإشعارات، سيعمل الأذان بالصوت فقط وقت فتح التطبيق");
+    cb();return;
+  }
+  if(Notification.permission==="granted"){regSW();cb();return;}
+  if(Notification.permission==="denied"){
+    setNote("الإشعارات محظورة لهذا الموقع من إعدادات المتصفح، سيعمل الصوت فقط وقت فتح التطبيق");
+    cb();return;
+  }
+  var done=false;
+  function fin(p){
+    if(done){return;}
+    done=true;
+    if(p==="granted"){setNote("تم السماح بالإشعارات ✓");regSW();}
+    else{setNote("لم تسمح بالإشعارات، سيعمل الصوت فقط وقت فتح التطبيق");}
+    cb();
+  }
+  try{
+    var r=Notification.requestPermission(fin);
+    if(r&&r.then){r.then(fin);}
+  }catch(e){cb();}
+}
+function notify(title,body){
+  if(!("Notification" in window)||Notification.permission!=="granted"){return;}
+  var o={body:body,icon:"icon-192.png",tag:"salat",renotify:true};
+  try{
+    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration){
+      navigator.serviceWorker.getRegistration().then(function(reg){
+        if(reg&&reg.showNotification){reg.showNotification(title,o);}
+        else{try{new Notification(title,o);}catch(e){}}
+      }).catch(function(){});
+    }else{new Notification(title,o);}
+  }catch(e){}
+}
+
+window.toggleBell=function(k){
+  var b=getB();
+  if(b[k]){
+    b[k]=0;setB(b);drawRows(true);setNote("");
+    return;
+  }
+  askPerm(function(){
+    var bb=getB();
+    bb[k]=1;setB(bb);
+    /* لو الوقت عدّى اليوم ما نأذن فورًا */
+    if(typeof T!=="undefined"&&T.Fajr&&new Date()>=timeOf(k)){
+      var f=getF();
+      f[dayKey(new Date())+"|"+k]=1;
+      setF(f);
+    }
+    drawRows(true);
+  });
+};
+
+/* ----- الصوت ----- */
+var cur=null,tokA=0,pend=null;
+function stopA(){
+  tokA++;
+  pend=null;
+  if(cur){try{cur.pause();}catch(e){}cur=null;}
+  hideBar();
+}
+window.stopAdhan=stopA;
+
+function beep(n){
+  try{
+    var C=window.AudioContext||window.webkitAudioContext;
+    var c=new C(),i=0;
+    var one=function(){
+      if(i>=n){try{c.close();}catch(e){}return;}
+      var o=c.createOscillator(),g=c.createGain();
+      o.frequency.value=880;
+      g.gain.value=0.3;
+      o.connect(g);g.connect(c.destination);
+      o.start();
+      setTimeout(function(){o.stop();i++;setTimeout(one,300);},400);
+    };
+    one();
+  }catch(e){}
+}
+
+function tryPlay(srcs,i,tok,name){
+  if(tok!==tokA){return;}
+  if(i>=srcs.length){
+    beep(4);
+    setNote("ما لقيت ملف الأذان adhan.mp3 في المستودع، فشغّلت صوت تنبيه بدله");
+    setTimeout(function(){if(tok===tokA){hideBar();}},6000);
+    return;
+  }
+  var a=new Audio(srcs[i]);
+  cur=a;
+  a.onerror=function(){tryPlay(srcs,i+1,tok,name);};
+  a.onended=function(){if(tok===tokA){stopA();}};
+  var pr=a.play();
+  if(pr&&pr.catch){
+    pr.catch(function(err){
+      if(tok!==tokA){return;}
+      if(err&&err.name==="NotAllowedError"){
+        pend={srcs:srcs,i:i,name:name};
+        showBar("🕌 حان وقت "+name,'<button onclick="resumeAdhan()">▶ تشغيل</button>');
+      }
+    });
+  }
+}
+window.resumeAdhan=function(){
+  if(!pend){return;}
+  var p=pend;
+  pend=null;
+  showBar("🕌 "+p.name,'<button onclick="stopAdhan()">⏹ إيقاف</button>');
+  tryPlay(p.srcs,p.i,tokA,p.name);
+};
+
+function fire(k){
+  var name=PN[k];
+  stopA();
+  var tok=tokA;
+  if(k==="Sunrise"){
+    notify("حان وقت الشروق","☀️");
+    showBar("🌅 حان وقت الشروق",'<button onclick="stopAdhan()">✕</button>');
+    beep(3);
+    setTimeout(function(){if(tok===tokA){hideBar();}},8000);
+    return;
+  }
+  notify("حان وقت صلاة "+name,"حيّ على الصلاة");
+  showBar("🕌 حان وقت صلاة "+name,'<button onclick="stopAdhan()">⏹ إيقاف</button>');
+  var srcs=(k==="Fajr")?["adhan-fajr.mp3","adhan.mp3"]:["adhan.mp3"];
+  tryPlay(srcs,0,tok,"صلاة "+name);
+}
+
+test.onclick=function(){
+  stopA();
+  var tok=tokA;
+  setNote("");
+  showBar("🔊 تجربة الأذان",'<button onclick="stopAdhan()">⏹ إيقاف</button>');
+  tryPlay(["adhan.mp3"],0,tok,"التجربة");
+};
+
+/* ----- الفحص كل ثانية ----- */
+function check(){
+  if(typeof T==="undefined"||!T.Fajr){return;}
+  var b=getB(),f=getF(),now=new Date(),day=dayKey(now),changed=false;
+  for(var key in f){
+    if(key.indexOf(day+"|")!==0){delete f[key];changed=true;}
+  }
+  for(var k in PN){
+    if(!b[k]){continue;}
+    var diff=now-timeOf(k);
+    var fk=day+"|"+k;
+    if(diff>=0&&diff<150000&&!f[fk]){
+      f[fk]=1;changed=true;
+      fire(k);
+    }
+  }
+  if(changed){setF(f);}
+  drawRows(false);
+}
+setInterval(check,1000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden){check();}});
+
+if("Notification" in window&&Notification.permission==="granted"){regSW();}
+}catch(e){}
+})();

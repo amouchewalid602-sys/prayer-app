@@ -6,12 +6,14 @@
 <meta name="theme-color" content="#1565c0">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
 <title>تطبيق صلاة</title>
 <style>
   :root{--s:1;--bg:#f4f8ff;--fg:#12305a;--card:#fff;--pri:#1565c0;--sub:#4a6a96;--line:#cfe0fb;--sel:#e3f0ff;--link:#1565c0;--shadow:rgba(21,101,192,.18)}
   body.dark{--bg:#0e1726;--fg:#e6eefc;--card:#172338;--pri:#2a7de1;--sub:#9db4d6;--line:#25344f;--sel:#1f3556;--link:#8fc0ff;--shadow:rgba(0,0,0,.4)}
   html{font-size:calc(16px * var(--s))}
   body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--fg);text-align:center;padding-bottom:70px;font-size:1rem}
+  .uth{font-family:'Amiri Quran','Scheherazade New','Traditional Arabic',serif}
   h1{position:relative;margin:0;padding:18px;background:var(--pri);color:#fff;font-size:1.35rem}
   #gear{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:42px;height:42px;background:rgba(255,255,255,.2);border:0;border-radius:12px;font-size:1.3rem;color:#fff}
   .tab{display:none;padding-top:8px}.tab.on{display:block}
@@ -29,8 +31,8 @@
   .grid div{padding:14px 4px;background:var(--card);border-radius:10px;font-size:1.05rem;box-shadow:0 1px 4px var(--shadow)}
   .src{font-size:.9rem;color:var(--sub)}
   .manual{margin:15px;padding:14px;background:var(--card);border-radius:12px;box-shadow:0 1px 4px var(--shadow)}
-  .manual input{width:42%;padding:10px;margin:4px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;font-size:.95rem}
-  .manual button{margin-top:8px;padding:10px 24px;background:var(--pri);color:#fff;border:0;border-radius:20px;font-size:.95rem}
+  .pick{margin:8px auto;padding:12px 14px;width:85%;box-sizing:border-box;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;font-size:1rem;text-align:right}
+  .pick:after{content:"▾";float:left;color:var(--sub)}
   .cat{display:flex;align-items:center;margin:14px 15px;padding:14px 16px;background:var(--card);border-radius:14px;box-shadow:0 1px 5px var(--shadow)}
   .cat .ico{width:46px;height:46px;border-radius:12px;background:var(--sel);display:flex;align-items:center;justify-content:center;font-size:1.5rem}
   .cat .nm{flex:1;margin-inline-start:14px;text-align:right;font-size:1.05rem}
@@ -48,6 +50,15 @@
   .big .arr{font-size:1.2rem}
   .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
   .g2 button{padding:10px 4px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;font-size:.8rem;line-height:1.4}
+  #pk{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:60;align-items:center;justify-content:center}
+  #pk.open{display:flex}
+  #pkb{width:min(90vw,380px);max-height:80vh;display:flex;flex-direction:column;background:var(--card);color:var(--fg);border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .pkh{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--pri);color:#fff}
+  .pkh span{font-size:1.4rem}
+  .pkh button{border:0;background:rgba(255,255,255,.25);color:#fff;width:34px;height:34px;border-radius:50%;font-size:1rem}
+  #pkl{overflow:auto;padding:8px 12px 12px}
+  .opt{display:block;width:100%;text-align:right;margin:8px 0;padding:12px 14px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;font-size:1rem}
+  .opt.sel{background:var(--sel);font-weight:bold;border-color:var(--pri)}
 </style>
 </head>
 <body>
@@ -58,10 +69,9 @@
   <div id="next"></div>
   <div id="list"></div>
   <div class="manual" id="manual">
-    <div>تغيير المدينة (بالإنجليزية)</div>
-    <input id="inCity" placeholder="City مثل Casablanca">
-    <input id="inCountry" placeholder="Country مثل Morocco">
-    <br><button onclick="byCity()">تحديث المواقيت</button>
+    <div class="uth" style="font-size:1.2rem;margin-bottom:6px">📍 اختر موقعك</div>
+    <div class="pick" id="pC" onclick="openPick('country')">اختر الدولة</div>
+    <div class="pick" id="pK" onclick="openPick('city')">اختر المدينة</div>
   </div>
 </div>
 
@@ -100,7 +110,18 @@
   </div>
 </div>
 
+<div id="pk" onclick="if(event.target===this)closePick()">
+  <div id="pkb">
+    <div class="pkh"><span class="uth" id="pkt"></span><button onclick="closePick()">✕</button></div>
+    <div id="pkl"></div>
+  </div>
+</div>
+
+<script src="cities.js?v=11"></script>
+
 <script>
+if(typeof COUNTRIES==="undefined"){var COUNTRIES=[];}
+
 /* ===== التبويبات ===== */
 function show(n,b){
   var wasAd=document.getElementById("t2").classList.contains("on");
@@ -149,7 +170,7 @@ function goCity(){
   closeSet();
   show(1,document.querySelectorAll("nav button")[0]);
   document.getElementById("manual").scrollIntoView();
-  document.getElementById("inCity").focus();
+  openPick("country");
 }
 function resetAdhkar(){
   if(typeof doResetAdhkar==="function"){doResetAdhkar();}
@@ -195,43 +216,90 @@ function load(url,label){
     render();
     if(!ticking){ticking=true;setInterval(render,1000);}
   }).catch(function(){
-    setCity("تعذّر تحميل المواقيت، تأكد من الإنترنت أو اكتب مدينتك بالأسفل");
+    setCity("تعذّر تحميل المواقيت، تأكد من الإنترنت أو اختر مدينتك من الأسفل");
   });
 }
 function byCoords(lat,lon){
   load("https://api.aladhan.com/v1/timings?latitude="+lat+"&longitude="+lon+"&method=4","موقعك الحالي");
 }
-function byCity(){
-  var c=document.getElementById("inCity").value.trim();
-  var k=document.getElementById("inCountry").value.trim();
-  if(!c||!k){setCity("اكتب المدينة والدولة بالإنجليزية");return;}
+function byCityNames(c,k,label){
   try{localStorage.setItem("salat_city",c);localStorage.setItem("salat_country",k);}catch(e){}
-  load("https://api.aladhan.com/v1/timingsByCity?city="+encodeURIComponent(c)+"&country="+encodeURIComponent(k)+"&method=4",c);
+  load("https://api.aladhan.com/v1/timingsByCity?city="+encodeURIComponent(c)+"&country="+encodeURIComponent(k)+"&method=4",label);
 }
+
+/* ===== اختيار الدولة والمدينة ===== */
+var selC=null,selK=null;
+function setLabels(){
+  document.getElementById("pC").textContent=selC?selC.n:"اختر الدولة";
+  document.getElementById("pK").textContent=selK?selK[0]:"اختر المدينة";
+}
+function openPick(kind){
+  var html="",title="";
+  if(kind==="country"){
+    title="الدول";
+    for(var i=0;i<COUNTRIES.length;i++){
+      html+='<button class="opt'+(selC&&selC===COUNTRIES[i]?' sel':'')+'" onclick="pickC('+i+')">'+COUNTRIES[i].n+'</button>';
+    }
+  }else{
+    if(!selC){openPick("country");return;}
+    title="مدن "+selC.n;
+    for(var j=0;j<selC.c.length;j++){
+      html+='<button class="opt'+(selK&&selK===selC.c[j]?' sel':'')+'" onclick="pickK('+j+')">'+selC.c[j][0]+'</button>';
+    }
+  }
+  if(!html){html='<div class="card">تعذّر تحميل ملف المدن (cities.js)</div>';}
+  document.getElementById("pkt").textContent=title;
+  document.getElementById("pkl").innerHTML=html;
+  document.getElementById("pkl").scrollTop=0;
+  document.getElementById("pk").classList.add("open");
+}
+function closePick(){document.getElementById("pk").classList.remove("open");}
+function pickC(i){
+  selC=COUNTRIES[i];selK=null;
+  setLabels();
+  closePick();
+  setTimeout(function(){openPick("city");},150);
+}
+function pickK(j){
+  selK=selC.c[j];
+  setLabels();
+  closePick();
+  byCityNames(selK[1],selC.e,selK[0]+"، "+selC.n);
+}
+
 (function start(){
   var c="",k="";
   try{c=localStorage.getItem("salat_city")||"";k=localStorage.getItem("salat_country")||"";}catch(e){}
   if(c&&k){
-    document.getElementById("inCity").value=c;
-    document.getElementById("inCountry").value=k;
-    byCity();
+    var label=c+"، "+k;
+    for(var i=0;i<COUNTRIES.length;i++){
+      if(COUNTRIES[i].e===k){
+        selC=COUNTRIES[i];
+        for(var j=0;j<selC.c.length;j++){
+          if(selC.c[j][1]===c){selK=selC.c[j];}
+        }
+        label=(selK?selK[0]:c)+"، "+selC.n;
+      }
+    }
+    setLabels();
+    byCityNames(c,k,label);
     return;
   }
-  if(!navigator.geolocation){setCity("الموقع غير متاح، اكتب مدينتك بالأسفل");return;}
+  if(!navigator.geolocation){setCity("اختر مدينتك من الأسفل");return;}
   navigator.geolocation.getCurrentPosition(
     function(p){byCoords(p.coords.latitude,p.coords.longitude);},
-    function(){setCity("تعذّر تحديد الموقع، اكتب مدينتك بالأسفل");},
+    function(){setCity("تعذّر تحديد الموقع، اختر مدينتك من الأسفل");},
     {timeout:8000,maximumAge:600000}
   );
   setTimeout(function(){
     if(!T.Fajr&&document.getElementById("city").textContent.indexOf("جارٍ تحديد")===0){
-      setCity("تعذّر تحديد الموقع، اكتب مدينتك بالأسفل");
+      setCity("تعذّر تحديد الموقع، اختر مدينتك من الأسفل");
     }
   },10000);
 })();
 </script>
 
 <script src="adhkar-data.js?v=9"></script>
-<script src="app2.js?v=9"></script>
+<script src="app2.js?v=10"></script>
 </body>
-</html>
+  </html>

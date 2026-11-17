@@ -348,6 +348,357 @@ setCity("تعذّر تحديد الموقع، اختر مدينتك من الأ�
 <script src="app2.js?v=10"></script>
 <script src="hadith.js?v=1"></script>
 
+
+<script>
+(function () {
+"use strict";
+
+var KEY = "nawar_language";
+var lang = localStorage.getItem(KEY) || "ar";
+
+var translations = {
+fr: {
+"المواقيت":"Horaires de prière",
+"الأذكار":"Invocations",
+"الأسماء":"Noms d’Allah",
+"حديث اليوم":"Hadith du jour",
+"الإعدادات":"Paramètres",
+"حجم الخط:":"Taille du texte :",
+"الوضع الليلي":"Mode sombre",
+"الوضع النهاري":"Mode clair",
+"نظام الوقت":"Format de l’heure",
+"الوقت: 12 ساعة":"Heure : 12 heures",
+"الوقت: 24 ساعة":"Heure : 24 heures",
+"الاهتزاز: يعمل":"Vibration : activée",
+"الاهتزاز: متوقف":"Vibration : désactivée",
+"تصفير العدّادات":"Réinitialiser les compteurs",
+"تغيير المدينة":"Changer de ville",
+"إعادة حجم الخط":"Réinitialiser la taille",
+"اختر موقعك":"Choisissez votre emplacement",
+"اختر الدولة":"Choisir le pays",
+"اختر المدينة":"Choisir la ville",
+"الدول":"Pays",
+"جارٍ تحديد موقعك...":"Localisation en cours...",
+"جارٍ تحميل المواقيت...":"Chargement des horaires...",
+"موقعك الحالي":"Votre position actuelle",
+"الفجر":"Fajr",
+"الشروق":"Lever du soleil",
+"الظهر":"Dhuhr",
+"العصر":"Asr",
+"المغرب":"Maghrib",
+"العشاء":"Isha",
+"اختر اللغة":"Choisir la langue",
+"إغلاق":"Fermer",
+"تعذّر تحديد الموقع، اختر مدينتك من الأسفل":"Localisation impossible. Choisissez votre ville ci-dessous.",
+"ابحث عن اسم...":"Rechercher un nom...",
+"لا توجد نتيجة":"Aucun résultat",
+"الأسماء الظاهرة:":"Noms affichés :"
+},
+en: {
+"المواقيت":"Prayer Times",
+"الأذكار":"Adhkar",
+"الأسماء":"Names of Allah",
+"حديث اليوم":"Hadith of the Day",
+"الإعدادات":"Settings",
+"حجم الخط:":"Font Size:",
+"الوضع الليلي":"Dark Mode",
+"الوضع النهاري":"Light Mode",
+"نظام الوقت":"Time Format",
+"الوقت: 12 ساعة":"12-hour format",
+"الوقت: 24 ساعة":"24-hour format",
+"الاهتزاز: يعمل":"Vibration: On",
+"الاهتزاز: متوقف":"Vibration: Off",
+"تصفير العدّادات":"Reset Counters",
+"تغيير المدينة":"Change City",
+"إعادة حجم الخط":"Reset Font Size",
+"اختر موقعك":"Choose your location",
+"اختر الدولة":"Choose country",
+"اختر المدينة":"Choose city",
+"الدول":"Countries",
+"جارٍ تحديد موقعك...":"Detecting your location...",
+"جارٍ تحميل المواقيت...":"Loading prayer times...",
+"موقعك الحالي":"Your current location",
+"الفجر":"Fajr",
+"الشروق":"Sunrise",
+"الظهر":"Dhuhr",
+"العصر":"Asr",
+"المغرب":"Maghrib",
+"العشاء":"Isha",
+"اختر اللغة":"Choose language",
+"إغلاق":"Close",
+"تعذّر تحديد الموقع، اختر مدينتك من الأسفل":"Unable to detect location. Choose a city below.",
+"ابحث عن اسم...":"Search for a name...",
+"لا توجد نتيجة":"No results",
+"الأسماء الظاهرة:":"Displayed names:"
+}
+};
+
+function tr(value) {
+if (lang === "ar") return value;
+return (translations[lang] && translations[lang][value]) || value;
+}
+
+var style = document.createElement("style");
+style.textContent = `
+#langBtn{
+position:absolute;right:10px;top:50%;
+transform:translateY(-50%);
+width:42px;height:42px;
+border:1px solid rgba(255,255,255,.65);
+border-radius:12px;background:transparent;
+color:white;display:flex;align-items:center;
+justify-content:center;cursor:pointer
+}
+#langBtn svg{width:24px;height:24px}
+#langOverlay{
+display:none;position:fixed;inset:0;
+z-index:100;background:rgba(0,0,0,.55);
+align-items:center;justify-content:center
+}
+#langOverlay.open{display:flex}
+#langBox{
+width:min(88vw,340px);padding:20px;
+border-radius:18px;background:var(--card);
+color:var(--fg);box-shadow:0 8px 30px rgba(0,0,0,.3)
+}
+#langBox h3{margin:0 0 16px}
+.langOption{
+display:block;width:100%;padding:14px;
+margin:8px 0;border:1px solid var(--line);
+border-radius:12px;background:var(--bg);
+color:var(--fg);font-size:1rem;text-align:start
+}
+.langOption.active{border:2px solid var(--pri);background:var(--sel);font-weight:bold}
+#langClose{
+width:100%;padding:12px;margin-top:8px;
+border:0;border-radius:10px;background:var(--pri);
+color:white;font-size:1rem
+}
+`;
+document.head.appendChild(style);
+
+var heading = document.querySelector("h1");
+if (heading) {
+var btn = document.createElement("button");
+btn.id = "langBtn";
+btn.setAttribute("aria-label", "Change language");
+btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M2.8 12h18.4M12 2.5c2.5 2.6 3.8 5.8 3.8 9.5S14.5 18.9 12 21.5C9.5 18.9 8.2 15.7 8.2 12S9.5 5.1 12 2.5z"/></svg>';
+btn.onclick = openLanguage;
+heading.appendChild(btn);
+}
+
+var overlay = document.createElement("div");
+overlay.id = "langOverlay";
+overlay.innerHTML = `
+<div id="langBox">
+<h3 id="langHeading">اختر اللغة</h3>
+<button class="langOption" data-lang="ar">العربية</button>
+<button class="langOption" data-lang="fr">Français</button>
+<button class="langOption" data-lang="en">English</button>
+<button id="langClose">إغلاق</button>
+</div>`;
+document.body.appendChild(overlay);
+
+overlay.addEventListener("click", function(e) {
+if (e.target === overlay) closeLanguage();
+});
+
+overlay.querySelectorAll(".langOption").forEach(function(button) {
+button.addEventListener("click", function() {
+changeLanguage(button.dataset.lang);
+});
+});
+
+document.getElementById("langClose").onclick = closeLanguage;
+
+function openLanguage() {
+overlay.classList.add("open");
+}
+
+function closeLanguage() {
+overlay.classList.remove("open");
+}
+
+function changeLanguage(code) {
+if (code !== "ar" && code !== "fr" && code !== "en") return;
+lang = code;
+localStorage.setItem(KEY, lang);
+applyLanguage();
+closeLanguage();
+}
+
+function set(id, value) {
+var el = document.getElementById(id);
+if (el) el.textContent = value;
+}
+
+function translateCountryLabels() {
+if (typeof selC !== "undefined" && selC) {
+var pc = document.getElementById("pC");
+if (pc) pc.textContent = lang === "ar" ? selC.n : selC.e;
+}
+if (typeof selK !== "undefined" && selK) {
+var pk = document.getElementById("pK");
+if (pk) pk.textContent = lang === "ar" ? selK[0] : selK[1];
+}
+}
+
+function applyLanguage() {
+document.documentElement.lang = lang;
+document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+
+var navButtons = document.querySelectorAll("nav button");
+var navArabic = ["المواقيت","الأذكار","الأسماء","حديث اليوم"];
+
+navButtons.forEach(function(button, index) {
+if (navArabic[index]) button.textContent = tr(navArabic[index]);
+});
+
+var labels = document.querySelectorAll("#box .lbl");
+labels.forEach(function(el) {
+if (!el.dataset.arabic) el.dataset.arabic = el.textContent;
+el.textContent = tr(el.dataset.arabic);
+});
+
+var bDark = document.getElementById("bDark");
+var bFmt = document.getElementById("bFmt");
+var bVib = document.getElementById("bVib");
+
+if (bDark) {
+bDark.textContent = (S.dark ? "☀️ " : "🌙 ") +
+tr(S.dark ? "الوضع النهاري" : "الوضع الليلي");
+}
+if (bFmt) {
+bFmt.textContent = "🕐 " + tr(S.h12 ? "الوقت: 12 ساعة" : "الوقت: 24 ساعة");
+}
+if (bVib) {
+bVib.textContent = (S.vib ? "📳 " : "📴 ") +
+tr(S.vib ? "الاهتزاز: يعمل" : "الاهتزاز: متوقف");
+}
+
+var settingsButtons = document.querySelectorAll("#box .g2 button");
+var settingTexts = [
+"تصفير العدّادات",
+"تغيير المدينة",
+"إعادة حجم الخط"
+];
+settingsButtons.forEach(function(button) {
+var original = button.dataset.original;
+if (!original) {
+original = button.textContent;
+button.dataset.original = original;
+}
+var text = original;
+settingTexts.forEach(function(item) {
+text = text.replace(item, tr(item));
+});
+button.textContent = text;
+});
+
+set("langHeading", tr("اختر اللغة"));
+set("langClose", tr("إغلاق"));
+
+overlay.querySelectorAll(".langOption").forEach(function(button) {
+button.classList.toggle("active", button.dataset.lang === lang);
+});
+
+var city = document.getElementById("city");
+if (city && city.dataset.arabic) city.textContent = tr(city.dataset.arabic);
+
+var manualTitle = document.querySelector("#manual .uth");
+if (manualTitle) {
+if (!manualTitle.dataset.arabic) manualTitle.dataset.arabic = "📍 اختر موقعك";
+manualTitle.textContent = tr(manualTitle.dataset.arabic);
+}
+
+var pc = document.getElementById("pC");
+var pk = document.getElementById("pK");
+if (pc && !selC) pc.textContent = tr("اختر الدولة");
+if (pk && !selK) pk.textContent = tr("اختر المدينة");
+
+translateCountryLabels();
+
+if (typeof render === "function") render();
+}
+
+var originalSetCity = window.setCity;
+if (typeof originalSetCity === "function") {
+window.setCity = function(message) {
+var el = document.getElementById("city");
+if (el) {
+el.dataset.arabic = message;
+el.textContent = tr(message);
+}
+};
+}
+
+var originalRender = window.render;
+if (typeof originalRender === "function") {
+window.render = function() {
+originalRender();
+
+document.querySelectorAll("#list .row span:first-child").forEach(function(el) {
+if (!el.dataset.arabic) el.dataset.arabic = el.textContent;
+el.textContent = tr(el.dataset.arabic);
+});
+
+var next = document.getElementById("next");
+if (next && next.textContent) {
+var names = ["الفجر","الشروق","الظهر","العصر","المغرب","العشاء"];
+var value = next.textContent;
+names.forEach(function(name) {
+value = value.replace(name, tr(name));
+});
+if (lang !== "ar") value = value.replace(" بعد ", " in ");
+next.textContent = value;
+}
+};
+}
+
+var originalOpenPick = window.openPick;
+if (typeof originalOpenPick === "function") {
+window.openPick = function(kind) {
+originalOpenPick(kind);
+if (lang === "ar") return;
+
+var title = document.getElementById("pkt");
+if (title) {
+if (kind === "country") {
+title.textContent = tr("الدول");
+} else if (selC) {
+title.textContent = (lang === "fr" ? "Villes de " : "Cities of ") + selC.e;
+}
+}
+
+document.querySelectorAll("#pkl .opt").forEach(function(el, index) {
+if (kind === "country" && COUNTRIES[index]) {
+el.textContent = COUNTRIES[index].e;
+} else if (kind === "city" && selC && selC.c[index]) {
+el.textContent = selC.c[index][1];
+}
+});
+};
+}
+
+var originalSetLabels = window.setLabels;
+if (typeof originalSetLabels === "function") {
+window.setLabels = function() {
+originalSetLabels();
+translateCountryLabels();
+};
+}
+
+window.openLanguage = openLanguage;
+window.closeLanguage = closeLanguage;
+window.changeLanguage = changeLanguage;
+window.getAppLanguage = function() { return lang; };
+window.appTranslate = tr;
+
+applyLanguage();
+
+})();
+</script>
+  
 </body>
   </html>
   

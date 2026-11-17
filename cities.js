@@ -1,3 +1,4 @@
+
 var COUNTRIES=[
  {n:"المغرب",e:"Morocco",c:[["الدار البيضاء","Casablanca"],["الرباط","Rabat"],["مراكش","Marrakech"],["فاس","Fes"],["طنجة","Tangier"],["أكادير","Agadir"],["مكناس","Meknes"],["وجدة","Oujda"],["القنيطرة","Kenitra"],["تطوان","Tetouan"],["آسفي","Safi"],["الجديدة","El Jadida"],["تازة","Taza"],["الناظور","Nador"],["بني ملال","Beni Mellal"],["الصويرة","Essaouira"],["العيون","Laayoune"],["الداخلة","Dakhla"],["ورزازات","Ouarzazate"],["الحسيمة","Al Hoceima"],["المحمدية","Mohammedia"],["خريبكة","Khouribga"],["سطات","Settat"],["تارودانت","Taroudant"]]},
  {n:"المملكة العربية السعودية",e:"Saudi Arabia",c:[["الرياض","Riyadh"],["جدة","Jeddah"],["مكة المكرمة","Mecca"],["المدينة المنورة","Medina"],["الدمام","Dammam"],["الخبر","Khobar"],["الظهران","Dhahran"],["الطائف","Taif"],["تبوك","Tabuk"],["بريدة","Buraydah"],["أبها","Abha"],["خميس مشيط","Khamis Mushait"],["حائل","Hail"],["نجران","Najran"],["جازان","Jazan"],["الجبيل","Jubail"],["ينبع","Yanbu"],["الهفوف","Hofuf"],["القطيف","Qatif"],["عرعر","Arar"],["سكاكا","Sakaka"],["الباحة","Al Baha"]]},
@@ -20,7 +21,8 @@ var COUNTRIES=[
  {n:"لبنان",e:"Lebanon",c:[["بيروت","Beirut"],["طرابلس","Tripoli"],["صيدا","Sidon"],["صور","Tyre"],["زحلة","Zahle"],["جونية","Jounieh"],["بعلبك","Baalbek"],["النبطية","Nabatieh"],["جبيل","Byblos"],["عاليه","Aley"]]},
  {n:"الصومال",e:"Somalia",c:[["مقديشو","Mogadishu"],["هرجيسا","Hargeisa"],["كيسمايو","Kismayo"],["بوصاصو","Bosaso"],["بيدوا","Baidoa"],["جالكعيو","Galkayo"],["بربرة","Berbera"],["مركا","Merca"],["بلدوين","Beledweyne"],["جوهر","Jowhar"]]},
  {n:"جيبوتي",e:"Djibouti",c:[["جيبوتي","Djibouti"],["علي صبيح","Ali Sabieh"],["تاجورة","Tadjoura"],["أوبوك","Obock"],["دخيل","Dikhil"],["أرتا","Arta"]]},
- {n:"جزر القمر",e:"Comoros",c:[["موروني","Moroni"],["موتسامودو","Mutsamudu"],["فومبوني","Fomboni"],["ميتسامولي","Mitsamiouli"],["دوموني","Domoni"]]}
+ {n:"جزر القمر",e:"Comoros",c:[["موروني","Moroni"],["موتسامودو","Mutsamudu"],["فومبوني","Fomboni"],["ميتسامولي","Mitsamiouli"],["دوموني","Domoni"]]},
+
  {n:"ألبانيا",e:"Albania",c:[["تيرانا","Tirana"],["دوريس","Durres"],["فلورا","Vlore"],["شكودرا","Shkoder"],["إلباسان","Elbasan"]]},
  {n:"أندورا",e:"Andorra",c:[["أندورا لا فيلا","Andorra la Vella"],["إسكالديس إنجورداني","Escaldes-Engordany"],["إنكامب","Encamp"]]},
  {n:"أوكرانيا",e:"Ukraine",c:[["كييف","Kyiv"],["خاركيف","Kharkiv"],["أوديسا","Odesa"],["لفيف","Lviv"],["دنيبرو","Dnipro"],["زابوريجيا","Zaporizhzhia"]]},
@@ -72,3 +74,4 @@ var COUNTRIES=[
  {n:"تركيا",e:"Turkey",c:[["إسطنبول","Istanbul"],["أنقرة","Ankara"],["إزمير","Izmir"],["أنطاليا","Antalya"],["بورصة","Bursa"],["قونية","Konya"],["أضنة","Adana"],["طرابزون","Trabzon"],["غازي عنتاب","Gaziantep"],["أنطاكيا","Antakya"]]},
  {n:"كازاخستان",e:"Kazakhstan",c:[["أستانا","Astana"],["ألماتي","Almaty"],["شيمكنت","Shymkent"],["أكتاو","Aktau"],["قراغندي","Karaganda"]]}
 ];
+                              

@@ -126,3 +126,213 @@ window.nextHadith=function(){
 draw();
 }catch(e){}
 })();
+
+/* ===== بوصلة القبلة ===== */
+(function(){
+try{
+var nav=document.querySelector("nav");
+if(!nav){return;}
+
+var KLAT=21.4225,KLON=39.8262;
+var qb=null,hs=null,running=false,gotEv=false,tmr=null,alignedPrev=false;
+
+var css=".qw{padding:6px 15px 24px}"
++".qt{margin:16px 0 6px;font-size:1.8rem;color:var(--link)}"
++".qst{min-height:3em;color:var(--sub);font-size:1rem;line-height:1.7}"
++".qst b{color:var(--link)}"
++".qok{color:#1b8a3a;font-weight:bold;font-size:1.1rem}"
++".qbox{width:min(86vw,330px);margin:8px auto}"
++".qbox svg{display:block;width:100%;height:auto}"
++".qinfo{background:var(--card);border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 1px 5px var(--shadow);line-height:2;text-align:right}"
++".qbtn{border:0;background:var(--pri);color:#fff;border-radius:16px;padding:14px 26px;font-size:1rem}"
++".qtip{margin-top:14px;color:var(--sub);font-size:.85rem;line-height:1.8}";
+var st=document.createElement("style");
+st.textContent=css;
+document.head.appendChild(st);
+
+function dial(){
+  var s='<svg viewBox="0 0 300 310" xmlns="http://www.w3.org/2000/svg">';
+  s+='<path d="M150 4 L136 32 L164 32 Z" style="fill:var(--pri)"/>';
+  s+='<g id="qg">';
+  s+='<circle cx="150" cy="165" r="130" style="fill:var(--card);stroke:var(--line)" stroke-width="3"/>';
+  for(var i=0;i<36;i++){
+    var a=i*10;
+    var len=(a%90===0)?20:(a%30===0?14:7);
+    var w=(a%90===0)?3:(a%30===0?2.5:1.2);
+    s+='<line x1="150" y1="35" x2="150" y2="'+(35+len)+'" transform="rotate('+a+' 150 165)" style="stroke:var(--sub)" stroke-width="'+w+'"/>';
+  }
+  var L=[["ش",0,"#d33"],["ق",90,""],["ج",180,""],["غ",270,""]];
+  for(var j=0;j<L.length;j++){
+    s+='<text x="150" y="104" text-anchor="middle" font-size="22" font-weight="bold" transform="rotate('+L[j][1]+' 150 165)" style="fill:'+(L[j][2]||'var(--fg)')+'">'+L[j][0]+'</text>';
+  }
+  s+='<g id="qk" visibility="hidden" transform="rotate(0 150 165)">';
+  s+='<line x1="150" y1="160" x2="150" y2="86" style="stroke:#d4a02a" stroke-width="3" stroke-dasharray="6 5"/>';
+  s+='<circle cx="150" cy="64" r="21" style="fill:#d4a02a"/>';
+  s+='<text x="150" y="72" text-anchor="middle" font-size="22">🕋</text>';
+  s+='</g>';
+  s+='<circle cx="150" cy="165" r="7" style="fill:var(--pri)"/>';
+  s+='</g></svg>';
+  return s;
+}
+
+var btn=document.createElement("button");
+btn.textContent="القبلة";
+btn.onclick=function(){show(5,this);};
+nav.appendChild(btn);
+
+var tab=document.createElement("div");
+tab.id="t5";
+tab.className="tab";
+nav.parentNode.insertBefore(tab,nav);
+tab.innerHTML='<div class="qw">'
++'<h2 class="qt">بوصلة القبلة</h2>'
++'<div class="qst" id="qst">اضغط تشغيل البوصلة للبدء</div>'
++'<div class="qbox">'+dial()+'</div>'
++'<div class="qinfo" id="qinfo"></div>'
++'<button class="qbtn" onclick="startQ()">🧭 إعادة تشغيل البوصلة</button>'
++'<div class="qtip">أمسك جوالك أفقيًا ومستويًا، وابتعد عن المعادن والمغناطيس. ولمعايرة البوصلة حرّك الجوال على شكل رقم 8.</div>'
++'</div>';
+
+function setSt(t){document.getElementById("qst").innerHTML=t;}
+
+function bearing(lat,lon){
+  var K=KLAT*Math.PI/180,L=KLON*Math.PI/180;
+  var p=lat*Math.PI/180,l=lon*Math.PI/180;
+  var dl=L-l;
+  var y=Math.sin(dl)*Math.cos(K);
+  var x=Math.cos(p)*Math.sin(K)-Math.sin(p)*Math.cos(K)*Math.cos(dl);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function distKm(lat,lon){
+  var R=6371,r=Math.PI/180;
+  var dLat=(KLAT-lat)*r,dLon=(KLON-lon)*r;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat*r)*Math.cos(KLAT*r)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+var dkm=null;
+function update(h){
+  var info="";
+  if(qb!==null){
+    info+='اتجاه القبلة: <b>'+Math.round(qb)+'°</b> من الشمال<br>';
+    if(dkm!==null){info+='المسافة إلى الكعبة: <b>'+Math.round(dkm)+' كم</b><br>';}
+  }
+  if(h!==null){info+='اتجاه جوالك الآن: <b>'+Math.round(h)+'°</b>';}
+  document.getElementById("qinfo").innerHTML=info||"جارٍ التحضير...";
+  if(qb===null||h===null){return;}
+  var diff=((qb-h+540)%360)-180;
+  var ok=Math.abs(diff)<=4;
+  if(ok){
+    setSt('<span class="qok">✅ أنت متجه نحو القبلة</span>');
+    if(!alignedPrev&&typeof S!=="undefined"&&S.vib&&navigator.vibrate){navigator.vibrate(80);}
+  }else{
+    setSt('دوّر جوالك <b>'+(diff>0?'يمينًا':'يسارًا')+'</b> حوالي <b>'+Math.abs(Math.round(diff))+'°</b> حتى يصير 🕋 تحت السهم');
+  }
+  alignedPrev=ok;
+}
+
+function applyCoords(lat,lon){
+  qb=bearing(lat,lon);
+  dkm=distKm(lat,lon);
+  var k=document.getElementById("qk");
+  if(k){
+    k.setAttribute("transform","rotate("+qb.toFixed(1)+" 150 165)");
+    k.setAttribute("visibility","visible");
+  }
+  update(hs);
+}
+
+function getCoords(){
+  var used=false;
+  function byCity(){
+    if(used){return;}
+    used=true;
+    var c="",k="";
+    try{c=localStorage.getItem("salat_city")||"";k=localStorage.getItem("salat_country")||"";}catch(e){}
+    if(!c||!k){
+      setSt("ما قدرت أحدد موقعك. اسمح للمتصفح بالموقع، أو اختر مدينتك من تبويب المواقيت ثم ارجع هنا.");
+      return;
+    }
+    fetch("https://api.aladhan.com/v1/timingsByCity?city="+encodeURIComponent(c)+"&country="+encodeURIComponent(k)+"&method=4")
+    .then(function(r){return r.json();})
+    .then(function(d){applyCoords(Number(d.data.meta.latitude),Number(d.data.meta.longitude));})
+    .catch(function(){setSt("تعذّر تحديد موقعك، تأكد من الإنترنت");});
+  }
+  if(!navigator.geolocation){byCity();return;}
+  navigator.geolocation.getCurrentPosition(
+    function(p){
+      if(used){return;}
+      used=true;
+      applyCoords(p.coords.latitude,p.coords.longitude);
+    },
+    function(){byCity();},
+    {timeout:8000,maximumAge:600000}
+  );
+}
+
+function onOri(e){
+  var h=null;
+  if(typeof e.webkitCompassHeading==="number"&&!isNaN(e.webkitCompassHeading)){
+    h=e.webkitCompassHeading;
+  }else if(e.alpha!==null&&e.alpha!==undefined&&(e.absolute===true||e.type==="deviceorientationabsolute")){
+    h=(360-e.alpha)%360;
+  }
+  if(h===null){return;}
+  gotEv=true;
+  if(hs===null){hs=h;}
+  else{
+    var d=((h-hs+540)%360)-180;
+    hs=(hs+d*0.25+360)%360;
+  }
+  var g=document.getElementById("qg");
+  if(g){g.setAttribute("transform","rotate("+(-hs).toFixed(1)+" 150 165)");}
+  update(hs);
+}
+
+function listen(){
+  running=true;
+  if("ondeviceorientationabsolute" in window){
+    window.addEventListener("deviceorientationabsolute",onOri,true);
+  }else{
+    window.addEventListener("deviceorientation",onOri,true);
+  }
+  clearTimeout(tmr);
+  tmr=setTimeout(function(){
+    if(running&&!gotEv){
+      setSt("ما وصلت قراءات من البوصلة. تأكد أن جوالك فيه حساس بوصلة، وأن المتصفح يسمح بحساسات الحركة (إعدادات الموقع).");
+    }
+  },4000);
+}
+function stopQ(){
+  running=false;
+  clearTimeout(tmr);
+  window.removeEventListener("deviceorientationabsolute",onOri,true);
+  window.removeEventListener("deviceorientation",onOri,true);
+}
+function askSensor(){
+  try{
+    if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function"){
+      DeviceOrientationEvent.requestPermission().then(function(r){
+        if(r==="granted"){listen();}else{setSt("لم تسمح بالوصول لحساس الحركة");}
+      }).catch(function(){setSt("تعذّر الوصول لحساس الحركة");});
+    }else{
+      listen();
+    }
+  }catch(e){listen();}
+}
+
+window.startQ=function(){
+  stopQ();
+  hs=null;gotEv=false;alignedPrev=false;
+  setSt("جارٍ تحديد موقعك وقراءة البوصلة...");
+  askSensor();
+  getCoords();
+};
+
+var prevShow=show;
+show=function(n,b){
+  prevShow(n,b);
+  if(n===5){window.startQ();}else{stopQ();}
+};
+}catch(e){}
+})();

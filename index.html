@@ -5,10 +5,53 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#1565c0">
+
+<title>نوار الشمس | مواقيت الصلاة والأذكار الإسلامية</title>
+
+<meta name="description" content="نوار الشمس تطبيق إسلامي شامل لمعرفة مواقيت الصلاة اليوم، وأوقات الفجر والظهر والعصر والمغرب والعشاء، والأذكار اليومية وأسماء الله الحسنى وحديث اليوم.">
+
+<meta name="keywords" content="صلاة, مواقيت الصلاة, أوقات الصلاة, الصلاة اليوم, الفجر, الظهر, العصر, المغرب, العشاء, الأذكار, أذكار المسلم, أسماء الله الحسنى, حديث اليوم, تطبيق إسلامي, نوار الشمس">
+
+<meta name="author" content="نوار الشمس">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="googlebot" content="index, follow">
+
+<link rel="canonical" href="https://amouchewalid602-sys.github.io/prayer-app/">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ar_AR">
+<meta property="og:site_name" content="نوار الشمس">
+<meta property="og:title" content="نوار الشمس | مواقيت الصلاة والأذكار">
+<meta property="og:description" content="رفيق المسلم لمعرفة مواقيت الصلاة والأذكار وأسماء الله الحسنى وحديث اليوم.">
+<meta property="og:url" content="https://amouchewalid602-sys.github.io/prayer-app/">
+<meta property="og:image" content="https://amouchewalid602-sys.github.io/prayer-app/icon-192.png">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="نوار الشمس">
+<meta name="twitter:description" content="مواقيت الصلاة والأذكار وأسماء الله الحسنى وحديث اليوم.">
+<meta name="twitter:image" content="https://amouchewalid602-sys.github.io/prayer-app/icon-192.png">
+
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
-<title>نوار الشمس</title>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "نوار الشمس",
+  "alternateName": "تطبيق نوار الشمس الإسلامي",
+  "url": "https://amouchewalid602-sys.github.io/prayer-app/",
+  "description": "تطبيق إسلامي شامل لمعرفة مواقيت الصلاة والأذكار اليومية وأسماء الله الحسنى وحديث اليوم.",
+  "applicationCategory": "LifestyleApplication",
+  "operatingSystem": "Android, iOS, Windows",
+  "inLanguage": "ar",
+  "browserRequirements": "Requires JavaScript"
+}
+</script>
+
 <style>
 :root{--s:1;--bg:#f4f8ff;--fg:#12305a;--card:#fff;--pri:#1565c0;--sub:#4a6a96;--line:#cfe0fb;--sel:#e3f0ff;--link:#1565c0;--shadow:rgba(21,101,192,.18)}
 body.dark{--bg:#0e1726;--fg:#e6eefc;--card:#172338;--pri:#2a7de1;--sub:#9db4d6;--line:#25344f;--sel:#1f3556;--link:#8fc0ff;--shadow:rgba(0,0,0,.4)}
@@ -18,7 +61,7 @@ body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--fg);text-a
 h1{position:relative;margin:0;padding:18px;background:var(--pri);color:#fff;font-size:1.35rem}
 #gear{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:42px;height:42px;background:rgba(255,255,255,.2);border:0;border-radius:12px;font-size:1.3rem;color:#fff}
 .tab{display:none;padding-top:8px}.tab.on{display:block}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line)}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);z-index:20}
 nav button{flex:1;padding:14px 4px;background:none;border:0;color:var(--link);font-size:.9rem}
 nav button.on{background:var(--sel);font-weight:bold}
 #city{padding:10px;font-size:.9rem;color:var(--sub)}
@@ -60,11 +103,56 @@ nav button.on{background:var(--sel);font-weight:bold}
 #pkl{overflow:auto;padding:8px 12px 12px}
 .opt{display:block;width:100%;text-align:right;margin:8px 0;padding:12px 14px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;font-size:1rem}
 .opt.sel{background:var(--sel);font-weight:bold;border-color:var(--pri)}
+
+/* محتوى تعريفي لمحركات البحث والزوار */
+.seo-intro{
+margin:12px 15px;
+padding:14px;
+background:var(--card);
+color:var(--sub);
+border-radius:12px;
+font-size:.9rem;
+line-height:1.9;
+text-align:right;
+box-shadow:0 1px 4px var(--shadow);
+}
+.seo-intro h2{
+color:var(--fg);
+font-size:1.1rem;
+margin:0 0 7px;
+}
+.seo-intro p{margin:5px 0}
+.seo-intro h3{
+color:var(--fg);
+font-size:1rem;
+margin:12px 0 4px;
+}
+.seo-intro ul{padding-right:20px;margin:4px 0}
 </style>
 </head>
+
 <body>
 
 <h1>🕌 نوار الشمس<button id="gear" onclick="openSet()">⚙️</button></h1>
+
+<section class="seo-intro">
+<h2>مواقيت الصلاة والأذكار الإسلامية</h2>
+<p>
+مرحباً بك في نوار الشمس، تطبيق إسلامي يساعدك على معرفة مواقيت الصلاة اليومية
+ومتابعة أوقات الصلوات الخمس: الفجر والظهر والعصر والمغرب والعشاء.
+</p>
+<h3>ماذا يقدم تطبيق نوار الشمس؟</h3>
+<ul>
+<li>معرفة مواقيت الصلاة حسب موقعك الجغرافي أو المدينة التي تختارها.</li>
+<li>عرض الوقت المتبقي للصلاة القادمة.</li>
+<li>الأذكار اليومية للمسلم.</li>
+<li>أسماء الله الحسنى.</li>
+<li>حديث اليوم.</li>
+</ul>
+<p>
+يهدف نوار الشمس إلى تسهيل متابعة الصلاة والعبادة اليومية من خلال واجهة عربية بسيطة.
+</p>
+</section>
 
 <div id="t1" class="tab on">
 <div id="city">جارٍ تحديد موقعك...</div>
